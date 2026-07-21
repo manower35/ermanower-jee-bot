@@ -3,17 +3,18 @@ title: ErManower JEE Bot
 emoji: 🎓
 colorFrom: blue
 colorTo: indigo
-sdk: docker
-app_port: 8000
+sdk: gradio
+sdk_version: 4.44.0
+app_file: app.py
 pinned: false
 ---
 
-# ErManower JEE Bot — 24/7 Docker Deployment on Hugging Face Spaces
+# ErManower JEE Bot — 100% Free Gradio Space Deployment
 
-This repository contains the production Docker build for **ErManower JEE Bot** — an asynchronous, multimodal, Socratic engineering entrance exam tutor for **IIT-JEE**, **TG EAPCET**, and **IPE Board** students.
+This repository contains the Gradio web UI and Telegram background daemon for **ErManower JEE Bot** — an AI Socratic engineering entrance exam tutor for **IIT-JEE**, **TG EAPCET**, and **IPE Board** students.
 
 ## Environment Secrets Required
-Add these under **Settings -> Repository Secrets** in your Hugging Face Space:
+Add these under **Settings -> Variables and secrets** in your Hugging Face Space:
 
 | Secret Name | Value |
 |-------------|-------|
@@ -21,9 +22,6 @@ Add these under **Settings -> Repository Secrets** in your Hugging Face Space:
 | `GROQ_API_KEY` | Your Groq API Key |
 | `GOOGLE_API_KEY` | Your Google API Key (optional) |
 
-## Project Architecture
-- `main.py` — Async Telegram runtime (`python-telegram-bot` >= 20.0)
-- `utils.py` — Multimodal query parser
-- `database.py` — Pre-filtered NCERT, IIT-JEE, TG EAPCET, and IPE vector knowledge store
-- `crew_orchestrator.py` — Groq-powered Socratic tutoring engine
-- `Dockerfile` — Multi-stage `python:3.11-slim` container
+## Features
+- **Telegram Bot Daemon**: Runs 24/7 in a background thread inside the Space.
+- **Gradio Web Interface**: Interactive test chat on Hugging Face web page.
