@@ -1,0 +1,50 @@
+# ═══════════════════════════════════════════════════════════════════════════
+# ErManower JEE Architecture Planning — Docker Compose Multi-Container Layout
+# ═══════════════════════════════════════════════════════════════════════════
+# Services:
+#   1. app        — The ErManower Telegram application
+#   2. chromadb   — Standalone ChromaDB vector database server
+#
+# Persistent volumes ensure RAG index data survives container restarts.
+# ═══════════════════════════════════════════════════════════════════════════
+
+services:
+  # ── ChromaDB Vector Database ──────────────────────────────────────────
+  chromadb:
+    image: chromadb/chroma:latest
+    container_name: ermanower-chromadb
+    ports:
+      - "8000:8000"
+    volumes:
+      - chroma_data:/chroma/chroma
+    environment:
+      - IS_PERSISTENT=TRUE
+      - ANONYMIZED_TELEMETRY=FALSE
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/heartbeat"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  # ── ErManower Architecture Planning Application ────────────────────────
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ermanower-app
+    depends_on:
+      chromadb:
+        condition: service_healthy
+    environment:
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
+      - GOOGLE_API_KEY=${GOOGLE_API_KEY}
+      - CHROMA_HOST=chromadb
+      - CHROMA_PORT=8000
+    restart: unless-stopped
+
+# ── Persistent Volumes ────────────────────────────────────────────────────
+volumes:
+  chroma_data:
+    driver: local
