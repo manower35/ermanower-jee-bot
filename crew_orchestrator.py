@@ -257,9 +257,12 @@ def run_fast_tutor(student_input: str) -> str:
     rag_results = search_knowledge_bank(query=student_input, top_k=3)
     context_str = ""
     if rag_results:
-        context_str = "\n\n--- RELEVANT NCERT / JEE / STATE BOARD REFERENCE ---\n" + "\n\n".join(
-            f"• {item['content']}" for item in rag_results
-        )
+        # Only include reference docs that actually matched the query keywords (score > 0.5)
+        valid_results = [item for item in rag_results if item['score'] > 0.5]
+        if valid_results:
+            context_str = "\n\n--- RELEVANT NCERT / JEE / STATE BOARD REFERENCE ---\n" + "\n\n".join(
+                f"• {item['content']}" for item in valid_results
+            )
 
     # 2. Single-pass Groq completion for instant response
     from groq import Groq
@@ -269,22 +272,39 @@ def run_fast_tutor(student_input: str) -> str:
 
     client = Groq(api_key=groq_api_key)
 
-    system_prompt = (
-        "You are ErManower — a legendary Hyderabad senior engineering entrance tutor for IIT-JEE (Main/Adv), TG EAPCET, and Telangana IPE Board.\n\n"
-        "STRICT FORMATTING RULES:\n"
-        "1. FORMAT: Write ONLY in numbered points (1., 2., 3., 4., 5.). Do NOT use asterisks (*) or stars anywhere.\n"
-        "2. NO DOLLAR SIGNS: Never use dollar signs ($ or $$). Write all math formulas in clean plain text notation (e.g., F = m · g, a = 9.8 m/s²).\n"
-        "3. HYDERABAD CONTEXT: Tailor explanations for Hyderabad/Telangana engineering aspirants preparing for IIT-JEE, TG EAPCET, and IPE Board.\n"
-        "4. SOCRATIC HINT: Never reveal the final answer directly. Provide a tactical hint and end with a question for their next step.\n"
-        "5. CONCISENESS: Keep the entire output under 100 words in 5 clear points.\n\n"
-        "EXAMPLE STRUCTURE:\n"
-        "TOPIC: [Topic Name] (IIT-JEE / TG EAPCET)\n\n"
-        "1. Key Concept: [1-line concept]\n"
-        "2. Governing Formula: [Plain text formula without dollar signs]\n"
-        "3. Exam Context: [Hyderabad/TG EAPCET tip]\n"
-        "4. Tactical Hint: [Guided hint without final answer]\n"
-        "5. Next Step: [Short question asking for next calculation step]"
+    is_list_request = any(
+        phrase in student_input.lower()
+        for phrase in ["top 5", "5 questions", "5 phy", "5 chem", "5 math", "list questions", "important questions", "top questions", "practice questions", "top neet", "top jee"]
     )
+
+    if is_list_request:
+        system_prompt = (
+            "You are ErManower — a legendary Hyderabad senior engineering entrance tutor for IIT-JEE, TG EAPCET, and NEET.\n\n"
+            "STRICT FORMATTING RULES:\n"
+            "1. FORMAT: Write EXACTLY 5 numbered points (1., 2., 3., 4., 5.) covering 5 DIFFERENT high-yield topics/questions across the subject (e.g., Mechanics, Electromagnetism, Optics, Modern Physics, Thermodynamics).\n"
+            "2. NO ASTERISKS: Do NOT use asterisks (*) or stars anywhere.\n"
+            "3. NO DOLLAR SIGNS: Write formulas in clean plain text notation.\n"
+            "4. SOCRATIC HINT: For each question, state the key concept/formula and give a short guided hint.\n"
+            "5. CONCISENESS: Keep the entire output crisp and under 120 words total."
+        )
+        context_str = ""  # Let LLM span multiple chapters freely for broad lists
+    else:
+        system_prompt = (
+            "You are ErManower — a legendary Hyderabad senior engineering entrance tutor for IIT-JEE (Main/Adv), TG EAPCET, and Telangana IPE Board.\n\n"
+            "STRICT FORMATTING RULES:\n"
+            "1. FORMAT: Write ONLY in numbered points (1., 2., 3., 4., 5.). Do NOT use asterisks (*) or stars anywhere.\n"
+            "2. NO DOLLAR SIGNS: Never use dollar signs ($ or $$). Write all math formulas in clean plain text notation (e.g., F = m · g, a = 9.8 m/s²).\n"
+            "3. HYDERABAD CONTEXT: Tailor explanations for Hyderabad/Telangana engineering aspirants preparing for IIT-JEE, TG EAPCET, and IPE Board.\n"
+            "4. SOCRATIC HINT: Never reveal the final answer directly. Provide a tactical hint and end with a question for their next step.\n"
+            "5. CONCISENESS: Keep the entire output under 100 words in 5 clear points.\n\n"
+            "EXAMPLE STRUCTURE:\n"
+            "TOPIC: [Topic Name] (IIT-JEE / TG EAPCET)\n\n"
+            "1. Key Concept: [1-line concept]\n"
+            "2. Governing Formula: [Plain text formula without dollar signs]\n"
+            "3. Exam Context: [Hyderabad/TG EAPCET tip]\n"
+            "4. Tactical Hint: [Guided hint without final answer]\n"
+            "5. Next Step: [Short question asking for next calculation step]"
+        )
 
     user_content = f"Student Query:\n{student_input}{context_str}"
 
@@ -299,5 +319,6 @@ def run_fast_tutor(student_input: str) -> str:
     )
 
     final_output = response.choices[0].message.content.strip()
+    final_output = final_output.replace("*", "").replace("$", "")
     logger.info("Fast Socratic Tutor completed in single pass. Output length: %d chars", len(final_output))
     return final_output

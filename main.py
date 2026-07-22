@@ -146,7 +146,7 @@ async def cmd_help(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 # ---------------------------------------------------------------------------
 
 async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Process a plain-text student query."""
+    """Process a plain-text student query with conversational memory."""
     user_text = update.message.text.strip()
     if not user_text:
         return
@@ -156,25 +156,35 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
 
     # Handle short greetings cleanly without full RAG pipeline
     if user_text.lower() in {"hi", "hello", "hey", "hlo", "namaste"}:
+        context.user_data.clear()
         await update.message.reply_text(
-            "👋 *Hello!* I'm ErManower, your JEE & EAPCET Socratic Tutor.\n\n"
+            "👋 Hello! I'm ErManower, your JEE & EAPCET Socratic Tutor.\n\n"
             "Ask me any question in Maths, Physics, or Chemistry to get started! 📚",
-            parse_mode="Markdown",
         )
         return
 
     # Send typing indicator
     await update.message.chat.send_action("typing")
 
+    # Maintain conversational context for follow-up inputs (e.g. "1", "2", "option A", "v = u+at")
+    last_turn = context.user_data.get("last_turn", "")
+    if last_turn and len(user_text) < 100:
+        query_for_engine = f"Previous Conversation Context:\n{last_turn}\n\nStudent Follow-up / Answer:\n{user_text}"
+    else:
+        query_for_engine = user_text
+
     # Execute low-latency Socratic engine
     try:
-        response = await _run_sync(run_crew, user_text)
+        response = await _run_sync(run_crew, query_for_engine)
     except Exception as exc:
         logger.error("Socratic engine failed: %s", exc, exc_info=True)
         response = (
             "⚠️ I encountered an issue while processing your question. "
             "Please try again or rephrase your query."
         )
+
+    # Save short memory of this turn for continuous discussion
+    context.user_data["last_turn"] = f"Student: {user_text}\nTutor: {response[:350]}"
 
     # Step 4: Send response (split if > 4096 chars)
     await _send_long_message(update, response)

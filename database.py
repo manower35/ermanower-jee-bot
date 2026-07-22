@@ -165,8 +165,34 @@ def search_knowledge_bank(
         top_k,
     )
 
-    matching_docs = []
     query_lower = query.lower()
+
+    # Fast rule-based subject classification if not explicitly filtered
+    if not subject:
+        if any(w in query_lower for w in ["physics", "phy ", " phy", "mechanics", "force", "motion", "electrostatics", "coulomb", "gauss"]):
+            subject = "Physics"
+        elif any(w in query_lower for w in ["chemistry", "chem", "bonding", "organic", "reaction", "hybridisation", "vsper"]):
+            subject = "Chemistry"
+        elif any(w in query_lower for w in ["math", "maths", "mathematics", "quadratic", "calculus", "integration", "derivative", "equation"]):
+            subject = "Maths"
+
+    # Fast rule-based exam classification if not explicitly filtered
+    if not exam:
+        if any(w in query_lower for w in ["advanced", "jee adv"]):
+            exam = "JEE_ADVANCED"
+        elif any(w in query_lower for w in ["eapcet", "tgeapcet", "eamcet"]):
+            exam = "TG_EAPCET"
+        elif any(w in query_lower for w in ["ipe", "board", "intermediate"]):
+            exam = "IPE_BOARD"
+        elif any(w in query_lower for w in ["jee", "main"]):
+            exam = "JEE_MAIN"
+
+    matching_docs = []
+    
+    # Custom query word cleaning (exclude common stop words)
+    stop_words = {"write", "with", "what", "how", "show", "give", "some", "your", "this", "that", "question", "questions", "answer", "answers", "quest", "about"}
+    raw_words = [w.strip("?,.:;!)(\"'-") for w in query_lower.split()]
+    words = [w for w in raw_words if len(w) >= 3 and w not in stop_words]
 
     for doc in DEFAULT_NCERT_KNOWLEDGE_BANK:
         meta = doc["metadata"]
@@ -181,9 +207,13 @@ def search_knowledge_bank(
 
         # 3. Simple relevance score based on keyword overlap
         content = doc["content"]
-        words = set(query_lower.split())
         content_lower = content.lower()
-        score = sum(1 for w in words if len(w) > 3 and w in content_lower) / max(len(words), 1)
+        
+        if words:
+            word_matches = sum(1 for w in words if w in content_lower)
+            score = word_matches / len(words)
+        else:
+            score = 0.0
 
         matching_docs.append({
             "content": content,
