@@ -32,8 +32,8 @@ def _start_telegram_bot():
         print(f"[Gradio Host] Telegram bot error: {exc}")
 
 # Launch Telegram bot background thread
-bot_thread = threading.Thread(target=_start_telegram_bot, daemon=True)
-bot_thread.start()
+# bot_thread = threading.Thread(target=_start_telegram_bot, daemon=True)
+# bot_thread.start()
 
 # ---------------------------------------------------------------------------
 # Gradio Web Interface for Hugging Face Preview
