@@ -169,28 +169,61 @@ async def cmd_menu(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     )
 
 
+QUIZ_BANK = [
+    {
+        "id": "q1",
+        "title": "Physics (10-Year High-Yield PYQ - Laws of Motion)",
+        "question": "A 5 kg block moves on a smooth surface under a force F = 20 N at an angle 60° to the horizontal. What is the horizontal acceleration of the block?",
+        "options": {"A": "1.0 m/s²", "B": "2.0 m/s²", "C": "4.0 m/s²", "D": "0.5 m/s²"},
+        "correct": "B",
+        "explanation": "1. Key Concept: Horizontal component F cos θ accelerates the block.\n2. Formula: a = (F · cos 60°) / m\n3. Calculation: F cos 60° = 20 · 0.5 = 10 N -> a = 10 / 5 = 2.0 m/s²."
+    },
+    {
+        "id": "q2",
+        "title": "Chemistry (10-Year High-Yield PYQ - Coordination Compounds)",
+        "question": "What is the spin-only magnetic moment of [Fe(H2O)6]2+ ion? (Fe Z=26)",
+        "options": {"A": "2.83 BM", "B": "4.90 BM", "C": "5.92 BM", "D": "0.00 BM"},
+        "correct": "B",
+        "explanation": "1. Key Concept: H2O is a weak ligand, so Fe2+ (3d6) has 4 unpaired electrons.\n2. Formula: μ = √(n(n + 2))\n3. Calculation: μ = √(4(6)) = √24 ≈ 4.90 BM."
+    },
+    {
+        "id": "q3",
+        "title": "Maths (10-Year High-Yield PYQ - Vectors & 3D)",
+        "question": "If vector a = 2i + j - k and b = i - j + k, what is the dot product a · b?",
+        "options": {"A": "0", "B": "2", "C": "-1", "D": "4"},
+        "correct": "A",
+        "explanation": "1. Key Concept: a · b = ax·bx + ay·by + az·bz.\n2. Calculation: (2)(1) + (1)(-1) + (-1)(1) = 2 - 1 - 1 = 0.\n3. Result: Since a · b = 0, the two vectors are perpendicular!"
+    }
+]
+
+
 async def cmd_quiz(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Generate an interactive multiple choice practice question."""
+    """Generate a 10-year high-yield PYQ practice challenge."""
+    import random
+    quiz_item = random.choice(QUIZ_BANK)
+    q_id = quiz_item["id"]
+
     quiz_text = (
-        "🎯 JEE/EAPCET Practice Challenge (Physics - Laws of Motion)\n\n"
-        "Question: A 5 kg block moves on a smooth surface under a force F = 20 N at an angle 60° to the horizontal. "
-        "What is the horizontal acceleration of the block?\n\n"
-        "A) 1.0 m/s²\n"
-        "B) 2.0 m/s²\n"
-        "C) 4.0 m/s²\n"
-        "D) 0.5 m/s²"
+        f"🎯 {quiz_item['title']}\n\n"
+        f"Question: {quiz_item['question']}\n\n"
+        f"A) {quiz_item['options']['A']}\n"
+        f"B) {quiz_item['options']['B']}\n"
+        f"C) {quiz_item['options']['C']}\n"
+        f"D) {quiz_item['options']['D']}"
     )
+
     keyboard = [
         [
-            InlineKeyboardButton("A) 1.0 m/s²", callback_data="quiz_opt_A"),
-            InlineKeyboardButton("B) 2.0 m/s²", callback_data="quiz_opt_B"),
+            InlineKeyboardButton(f"A) {quiz_item['options']['A']}", callback_data=f"qans_{q_id}_A"),
+            InlineKeyboardButton(f"B) {quiz_item['options']['B']}", callback_data=f"qans_{q_id}_B"),
         ],
         [
-            InlineKeyboardButton("C) 4.0 m/s²", callback_data="quiz_opt_C"),
-            InlineKeyboardButton("D) 0.5 m/s²", callback_data="quiz_opt_D"),
+            InlineKeyboardButton(f"C) {quiz_item['options']['C']}", callback_data=f"qans_{q_id}_C"),
+            InlineKeyboardButton(f"D) {quiz_item['options']['D']}", callback_data=f"qans_{q_id}_D"),
         ]
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
+
     if update.callback_query:
         await update.callback_query.message.reply_text(quiz_text, reply_markup=reply_markup)
     elif update.message:
@@ -207,24 +240,19 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         sub = data.split("_")[1].capitalize()
         await query.message.reply_text(
             f"📚 You selected {sub}!\n\n"
-            f"Send any query in {sub} (e.g., 'top 5 {sub.lower()} questions' or 'explain key formula') to get Socratic tutoring!"
+            f"Send any query in {sub} (e.g., 'top 5 {sub.lower()} 10-year PYQs' or 'explain key formula') to get Socratic tutoring!"
         )
-    elif data.startswith("quiz_opt_"):
-        chosen = data.split("_")[-1]
-        if chosen == "B":
-            feedback = (
-                "✅ Correct! Excellent reasoning!\n\n"
-                "1. Key Concept: Only the horizontal component F cos θ accelerates the block.\n"
-                "2. Governing Formula: a = (F · cos 60°) / m\n"
-                "3. Calculation: F cos 60° = 20 · 0.5 = 10 N -> a = 10 / 5 = 2.0 m/s²."
-            )
+    elif data.startswith("qans_"):
+        parts = data.split("_")
+        q_id = parts[1]
+        chosen = parts[2]
+
+        item = next((q for q in QUIZ_BANK if q["id"] == q_id), QUIZ_BANK[0])
+        if chosen == item["correct"]:
+            feedback = f"✅ Correct! Excellent 10-Year PYQ reasoning!\n\n{item['explanation']}"
         else:
-            feedback = (
-                f"❌ Option {chosen} is not correct.\n\n"
-                "1. Tactical Hint: Did you resolve F into horizontal component F · cos(60°)?\n"
-                "2. Formula: a = (F · cos θ) / m\n"
-                "Try computing with F = 20 N, cos 60° = 0.5, m = 5 kg!"
-            )
+            feedback = f"❌ Option {chosen} is incorrect.\n\nSocratic Hint: Re-check the governing formula.\n\n{item['explanation']}"
+
         await query.message.reply_text(feedback)
     elif data == "cmd_quiz":
         await cmd_quiz(update, context)

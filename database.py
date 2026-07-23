@@ -165,6 +165,61 @@ DEFAULT_NCERT_KNOWLEDGE_BANK = [
         ),
         "metadata": {"subject": "Chemistry", "exam": "JEE_ADVANCED", "topic": "Coordination Compounds", "source": "NCERT Class 12 / IIT-JEE"},
     },
+
+    # 10-Year PYQ Trend High-Yield Additions (JEE Main / TG EAPCET / NEET / IPE)
+    {
+        "content": (
+            "NCERT Class 12 Physics — Current Electricity & Electrical Circuits (10-Year PYQ Trend):\n"
+            "Ohm's Law & Resistance: $$R = \\rho \\frac{L}{A}$$, Temperature dependence: $$R_T = R_0(1 + \\alpha \\Delta T)$$\n"
+            "Kirchhoff's Laws: KCL (Current/Charge conservation $\\sum I = 0$) and KVL (Voltage/Energy conservation $\\sum V = 0$).\n"
+            "Balanced Wheatstone Bridge: $$\\frac{P}{Q} = \\frac{R}{S} \\implies$$ no current in galvanometer branch.\n"
+            "Potentiometer Potential Gradient: $$k = \\frac{V}{L}$$, Comparison of EMFs: $$\\frac{E_1}{E_2} = \\frac{l_1}{l_2}$$\n"
+            "IIT-JEE Main / TG EAPCET PYQ Note: Equivalent resistance for parallel combination: $$\\frac{1}{R_{eq}} = \\sum \\frac{1}{R_i}$$."
+        ),
+        "metadata": {"subject": "Physics", "exam": "JEE_MAIN", "topic": "Current Electricity", "source": "10-Year PYQ Trend / NCERT Class 12"},
+    },
+    {
+        "content": (
+            "NCERT Class 11 Physics — Thermodynamics & Kinetic Theory of Gases (10-Year PYQ Trend):\n"
+            "First Law of Thermodynamics: $$Q = \\Delta U + W$$\n"
+            "Work done in Isothermal Expansion: $$W = n R T \\ln\\left(\\frac{V_2}{V_1}\\right)$$\n"
+            "Work done in Adiabatic Process: $$W = \\frac{P_1 V_1 - P_2 V_2}{\\gamma - 1}$$\n"
+            "Molar Heat Capacities: $$C_p - C_v = R$$, Adiabatic exponent $$\\gamma = \\frac{C_p}{C_v} = 1 + \\frac{2}{f}$$\n"
+            "Carnot Engine Efficiency: $$\\eta = 1 - \\frac{T_2}{T_1} = \\frac{W}{Q_1}$$ where $T_1$ is source temp and $T_2$ is sink temp in Kelvin."
+        ),
+        "metadata": {"subject": "Physics", "exam": "JEE_MAIN", "topic": "Thermodynamics", "source": "10-Year PYQ Trend / NCERT Class 11"},
+    },
+    {
+        "content": (
+            "NCERT Class 11 Chemistry — General Organic Chemistry (GOC & Isomerism) (10-Year PYQ Trend):\n"
+            "Carbocation Stability Order: $$3^\\circ > 2^\\circ > 1^\\circ > \\text{Methyl}$$ (due to +I and hyperconjugation $\\alpha$-hydrogens).\n"
+            "Carbanion Stability Order: $$\\text{Methyl} > 1^\\circ > 2^\\circ > 3^\\circ$$ (destabilized by +I groups).\n"
+            "Acidic Strength Order of Carboxylic Acids: Increases with electron-withdrawing groups (-I, -M) and decreases with electron-donating groups (+I, +M).\n"
+            "Basic Strength of Amines in Aqueous Medium: $2^\\circ > 1^\\circ > 3^\\circ > NH_3$ (for methyl substituted) and $2^\\circ > 3^\\circ > 1^\\circ > NH_3$ (for ethyl substituted)."
+        ),
+        "metadata": {"subject": "Chemistry", "exam": "JEE_MAIN", "topic": "General Organic Chemistry", "source": "10-Year PYQ Trend / NCERT Class 11"},
+    },
+    {
+        "content": (
+            "NCERT Class 12 Chemistry — Chemical Kinetics (10-Year PYQ Trend):\n"
+            "First Order Reaction Integrated Rate Equation: $$k = \\frac{2.303}{t} \\log_{10}\\left(\\frac{[A]_0}{[A]_t}\\right)$$\n"
+            "Half-life of First Order Reaction: $$t_{1/2} = \\frac{0.693}{k}$$ (Independent of initial reactant concentration!).\n"
+            "Arrhenius Equation: $$k = A e^{-E_a / (R T)} \\implies \\log_{10}\\left(\\frac{k_2}{k_1}\\right) = \\frac{E_a}{2.303 R} \\left( \\frac{1}{T_1} - \\frac{1}{T_2} \\right)$$\n"
+            "IIT-JEE / NEET Tip: Zero order half-life $$t_{1/2} = \\frac{[A]_0}{2k}$$ is directly proportional to initial concentration."
+        ),
+        "metadata": {"subject": "Chemistry", "exam": "JEE_MAIN", "topic": "Chemical Kinetics", "source": "10-Year PYQ Trend / NCERT Class 12"},
+    },
+    {
+        "content": (
+            "NCERT Class 12 Mathematics — Vector Algebra & 3D Geometry (10-Year PYQ Trend):\n"
+            "Dot Product: $$\\vec{a} \\cdot \\vec{b} = |a||b| \\cos \\theta$$, Cross Product: $$|\\vec{a} \\times \\vec{b}| = |a||b| \\sin \\theta$$\n"
+            "Vector Projection of $$\\vec{a}$$ on $$\\vec{b}$$: $$\\text{proj} = \\frac{\\vec{a} \\cdot \\vec{b}}{|b|}$$\n"
+            "Shortest Distance between Skew Lines: $$d = \\frac{|(\\vec{a}_2 - \\vec{a}_1) \\cdot (\\vec{b}_1 \\times \\vec{b}_2)|}{|\\vec{b}_1 \\times \\vec{b}_2|}$$\n"
+            "Matrices Inverse & Determinants: $$A^{-1} = \\frac{\\text{adj}(A)}{|A|}$$, $$|A B| = |A| |B|$$, $$|\\text{adj}(A)| = |A|^{n-1}$$.\n"
+            "IIT-JEE Main PYQ Note: If system of equations $A X = B$ has infinitely many solutions, $|A| = 0$ and $\\text{adj}(A) \\cdot B = 0$."
+        ),
+        "metadata": {"subject": "Maths", "exam": "JEE_MAIN", "topic": "Vector & 3D Geometry", "source": "10-Year PYQ Trend / NCERT Class 12"},
+    },
 ]
 
 # ---------------------------------------------------------------------------
