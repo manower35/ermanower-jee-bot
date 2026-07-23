@@ -20,9 +20,10 @@ import sys
 from concurrent.futures import ThreadPoolExecutor
 from functools import partial
 
-from telegram import Update
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.ext import (
     Application,
+    CallbackQueryHandler,
     CommandHandler,
     ContextTypes,
     MessageHandler,
@@ -139,6 +140,96 @@ async def cmd_help(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         "I'll analyze the concept, pull relevant NCERT formulas, and guide your next step!"
     )
     await update.message.reply_text(help_text, parse_mode="Markdown")
+
+
+# ---------------------------------------------------------------------------
+# Interactive Menu & Quiz Command Handlers
+# ---------------------------------------------------------------------------
+
+async def cmd_menu(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Display interactive command & subject selection menu."""
+    keyboard = [
+        [
+            InlineKeyboardButton("⚡ Physics", callback_data="subject_physics"),
+            InlineKeyboardButton("🧪 Chemistry", callback_data="subject_chemistry"),
+            InlineKeyboardButton("📚 Maths", callback_data="subject_maths"),
+        ],
+        [
+            InlineKeyboardButton("🎯 Practice Interactive Quiz", callback_data="cmd_quiz"),
+        ],
+        [
+            InlineKeyboardButton("❓ Quick Help", callback_data="cmd_help"),
+        ]
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    await update.message.reply_text(
+        "🎓 ErManower JEE & EAPCET Interactive Menu\n\n"
+        "Select a subject to explore high-yield topics or tap Practice Interactive Quiz to test your knowledge!",
+        reply_markup=reply_markup,
+    )
+
+
+async def cmd_quiz(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Generate an interactive multiple choice practice question."""
+    quiz_text = (
+        "🎯 JEE/EAPCET Practice Challenge (Physics - Laws of Motion)\n\n"
+        "Question: A 5 kg block moves on a smooth surface under a force F = 20 N at an angle 60° to the horizontal. "
+        "What is the horizontal acceleration of the block?\n\n"
+        "A) 1.0 m/s²\n"
+        "B) 2.0 m/s²\n"
+        "C) 4.0 m/s²\n"
+        "D) 0.5 m/s²"
+    )
+    keyboard = [
+        [
+            InlineKeyboardButton("A) 1.0 m/s²", callback_data="quiz_opt_A"),
+            InlineKeyboardButton("B) 2.0 m/s²", callback_data="quiz_opt_B"),
+        ],
+        [
+            InlineKeyboardButton("C) 4.0 m/s²", callback_data="quiz_opt_C"),
+            InlineKeyboardButton("D) 0.5 m/s²", callback_data="quiz_opt_D"),
+        ]
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    if update.callback_query:
+        await update.callback_query.message.reply_text(quiz_text, reply_markup=reply_markup)
+    elif update.message:
+        await update.message.reply_text(quiz_text, reply_markup=reply_markup)
+
+
+async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Process clicks on inline keyboard buttons."""
+    query = update.callback_query
+    await query.answer()
+    data = query.data
+
+    if data.startswith("subject_"):
+        sub = data.split("_")[1].capitalize()
+        await query.message.reply_text(
+            f"📚 You selected {sub}!\n\n"
+            f"Send any query in {sub} (e.g., 'top 5 {sub.lower()} questions' or 'explain key formula') to get Socratic tutoring!"
+        )
+    elif data.startswith("quiz_opt_"):
+        chosen = data.split("_")[-1]
+        if chosen == "B":
+            feedback = (
+                "✅ Correct! Excellent reasoning!\n\n"
+                "1. Key Concept: Only the horizontal component F cos θ accelerates the block.\n"
+                "2. Governing Formula: a = (F · cos 60°) / m\n"
+                "3. Calculation: F cos 60° = 20 · 0.5 = 10 N -> a = 10 / 5 = 2.0 m/s²."
+            )
+        else:
+            feedback = (
+                f"❌ Option {chosen} is not correct.\n\n"
+                "1. Tactical Hint: Did you resolve F into horizontal component F · cos(60°)?\n"
+                "2. Formula: a = (F · cos θ) / m\n"
+                "Try computing with F = 20 N, cos 60° = 0.5, m = 5 kg!"
+            )
+        await query.message.reply_text(feedback)
+    elif data == "cmd_quiz":
+        await cmd_quiz(update, context)
+    elif data == "cmd_help":
+        await cmd_help(update, context)
 
 
 # ---------------------------------------------------------------------------
@@ -335,6 +426,9 @@ def main() -> None:
     # Register handlers (order matters — first match wins)
     app.add_handler(CommandHandler("start", cmd_start))
     app.add_handler(CommandHandler("help", cmd_help))
+    app.add_handler(CommandHandler("menu", cmd_menu))
+    app.add_handler(CommandHandler("quiz", cmd_quiz))
+    app.add_handler(CallbackQueryHandler(handle_callback))
     app.add_handler(MessageHandler(filters.PHOTO, handle_photo))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_text))
     app.add_handler(MessageHandler(

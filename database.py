@@ -124,6 +124,47 @@ DEFAULT_NCERT_KNOWLEDGE_BANK = [
         ),
         "metadata": {"subject": "Chemistry", "exam": "TG_EAPCET", "topic": "Organic Chemistry", "source": "NCERT Class 12 / TG EAPCET"},
     },
+    {
+        "content": (
+            "NCERT Class 12 Physics — Ray Optics & Optical Instruments:\n"
+            "Snell's Law: $$n_1 \\sin i = n_2 \\sin r$$\n"
+            "Lens Maker's Formula: $$\\frac{1}{f} = (n - 1) \\left( \\frac{1}{R_1} - \\frac{1}{R_2} \\right)$$\n"
+            "Thin Lens Formula: $$\\frac{1}{f} = \\frac{1}{v} - \\frac{1}{u}$$\n"
+            "Critical Angle & Total Internal Reflection: $$\\sin i_c = \\frac{1}{n}$$\n"
+            "TG EAPCET / IPE Tip: Prism refraction angle $n = \\frac{\\sin((A + D_m)/2)}{\\sin(A/2)}$."
+        ),
+        "metadata": {"subject": "Physics", "exam": "TG_EAPCET", "topic": "Ray Optics", "source": "NCERT Class 12 / TG EAPCET"},
+    },
+    {
+        "content": (
+            "NCERT Class 12 Physics — Dual Nature of Radiation & Matter (Modern Physics):\n"
+            "Einstein's Photoelectric Equation: $$K_{max} = h\\nu - \\Phi_0 = h(\\nu - \\nu_0)$$\n"
+            "de Broglie Wavelength: $$\\lambda = \\frac{h}{p} = \\frac{h}{m v} = \\frac{h}{\\sqrt{2 m q V}}$$\n"
+            "Stopping Potential: $$e V_0 = K_{max}$$\n"
+            "IIT-JEE Main PYQ Note: Photoelectric current depends on light intensity, while stopping potential depends solely on light frequency."
+        ),
+        "metadata": {"subject": "Physics", "exam": "JEE_MAIN", "topic": "Modern Physics", "source": "NCERT Class 12 / JEE Main"},
+    },
+    {
+        "content": (
+            "NCERT Class 11 Chemistry — Chemical & Ionic Equilibrium:\n"
+            "Equilibrium Constant Ratio: $$K_p = K_c (R T)^{\\Delta n_g}$$\n"
+            "pH Formula: $$pH = -\\log_{10}[H^+]$$, $$pH + pOH = 14$$\n"
+            "Henderson-Hasselbalch Equation for Acidic Buffer: $$pH = pK_a + \\log_{10}\\left(\\frac{[\\text{Salt}]}{[\\text{Acid}]}\\right)$$\n"
+            "Solubility Product: For $A_x B_y \\rightleftharpoons x A^{y+} + y B^{x-}$, $$K_{sp} = x^x y^y S^{x+y}$$."
+        ),
+        "metadata": {"subject": "Chemistry", "exam": "JEE_MAIN", "topic": "Equilibrium", "source": "NCERT Class 11 / JEE Main"},
+    },
+    {
+        "content": (
+            "NCERT Class 12 Chemistry — Coordination Compounds:\n"
+            "Crystal Field Theory (CFT) Octahedral Splitting: $t_{2g}$ (lower energy) and $e_g$ (higher energy).\n"
+            "Crystal Field Splitting Energy: $$\\Delta_o$$\n"
+            "Spectrochemical Series (Ligand Strength): $I^- < Br^- < Cl^- < F^- < OH^- < H_2O < NH_3 < en < CN^- < CO$.\n"
+            "Magnetic Moment Formula: $$\\mu = \\sqrt{n(n + 2)} \\text{ BM}$$ where $n =$ number of unpaired electrons."
+        ),
+        "metadata": {"subject": "Chemistry", "exam": "JEE_ADVANCED", "topic": "Coordination Compounds", "source": "NCERT Class 12 / IIT-JEE"},
+    },
 ]
 
 # ---------------------------------------------------------------------------

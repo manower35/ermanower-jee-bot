@@ -173,13 +173,72 @@ def parse_text_query(text: str) -> VisionExtractionResult:
 
 def parse_image(image_bytes: bytes, mime_type: str = "image/jpeg") -> VisionExtractionResult:
     """
-    Placeholder for image parsing — Groq does not support vision.
-    Returns a result asking the student to type their question instead.
+    Analyse an uploaded question image with Gemini 1.5 Flash Vision API to extract
+    raw text, LaTeX equations, detected subject, detected exam, and question summary.
     """
-    logger.warning("Image parsing called but Groq does not support vision. Returning guidance.")
-    return VisionExtractionResult(
-        raw_text="",
-        question_summary="Image received but photo analysis is not available. Please type your question as text.",
-        detected_subject=None,
-        detected_exam=None,
+    google_api_key = os.environ.get("GOOGLE_API_KEY", "")
+    if not google_api_key:
+        logger.warning("GOOGLE_API_KEY not set. Falling back to guidance text.")
+        return VisionExtractionResult(
+            raw_text="",
+            question_summary="Photo received! Please type your question as text to receive Socratic guidance.",
+        )
+
+    import base64
+    import httpx
+
+    b64_data = base64.b64encode(image_bytes).decode("utf-8")
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={google_api_key}"
+
+    prompt_text = (
+        "You are an academic OCR vision assistant for Indian engineering/medical entrance exams (IIT-JEE, TG EAPCET, NEET, IPE Board).\n"
+        "Transcribe all question text, mathematical expressions in LaTeX ($$...$$), detected subject (Maths, Physics, or Chemistry), "
+        "detected exam (JEE_MAIN, JEE_ADVANCED, TG_EAPCET, or IPE_BOARD), and a 1-paragraph summary.\n\n"
+        "Return a single raw valid JSON object matching this schema:\n"
+        "{\n"
+        '  "raw_text": "<transcribed text>",\n'
+        '  "equations_latex": ["$$...$$"],\n'
+        '  "diagrams": [],\n'
+        '  "detected_subject": "<Maths|Physics|Chemistry|null>",\n'
+        '  "detected_exam": "<JEE_MAIN|JEE_ADVANCED|TG_EAPCET|IPE_BOARD|null>",\n'
+        '  "question_summary": "<summary>"\n'
+        "}\n"
+        "Do NOT use markdown triple backticks. Return raw JSON only."
     )
+
+    payload = {
+        "contents": [
+            {
+                "parts": [
+                    {"text": prompt_text},
+                    {
+                        "inline_data": {
+                            "mime_type": mime_type,
+                            "data": b64_data,
+                        }
+                    },
+                ]
+            }
+        ]
+    }
+
+    try:
+        with httpx.Client(timeout=15.0) as client:
+            resp = client.post(url, json=payload)
+            resp.raise_for_status()
+            data = resp.json()
+            raw_text_out = data["candidates"][0]["content"]["parts"][0]["text"].strip()
+
+            if raw_text_out.startswith("```"):
+                raw_text_out = raw_text_out.split("\n", 1)[1] if "\n" in raw_text_out else raw_text_out[3:]
+                if raw_text_out.endswith("```"):
+                    raw_text_out = raw_text_out[:-3]
+                raw_text_out = raw_text_out.strip()
+
+            return VisionExtractionResult.model_validate_json(raw_text_out)
+    except Exception as exc:
+        logger.error("Gemini Vision API call failed: %s", exc, exc_info=True)
+        return VisionExtractionResult(
+            raw_text="",
+            question_summary="Image received! Please type your question text directly so I can guide you step-by-step.",
+        )
