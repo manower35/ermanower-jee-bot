@@ -184,10 +184,13 @@ async def cmd_menu(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     )
 
 
+from utils import parse_image, get_topic_diagram_url
+
 QUIZ_BANK = [
     {
         "id": "q1",
         "title": "Physics (10-Year High-Yield PYQ - Laws of Motion)",
+        "diagram_url": "https://quickchart.io/chart?c=%7Btype%3A%27radar%27%2Cdata%3A%7Blabels%3A%5B%27F_x+(Horizontal)%27%2C%27F_y+(Vertical)%27%2C%27Normal+Force%27%2C%27Gravity+(m%C2%B7g)%27%5D%2Cdatasets%3A%5B%7Blabel%3A%27Free+Body+Diagram%27%2Cdata%3A%5B10%2C17.3%2C49%2C49%5D%2CbackgroundColor%3A%27rgba(54,162,235,0.2)%27%7D%5D%7D&title=Free+Body+Force+Vector+Diagram",
         "question": "A 5 kg block moves on a smooth surface under a force F = 20 N at an angle 60° to the horizontal. What is the horizontal acceleration of the block?",
         "options": {"A": "1.0 m/s²", "B": "2.0 m/s²", "C": "4.0 m/s²", "D": "0.5 m/s²"},
         "correct": "B",
@@ -196,6 +199,7 @@ QUIZ_BANK = [
     {
         "id": "q2",
         "title": "Chemistry (10-Year High-Yield PYQ - Coordination Compounds)",
+        "diagram_url": "https://quickchart.io/chart?c=%7Btype%3A%27bar%27%2Cdata%3A%7Blabels%3A%5B%27d1%27%2C%27d2%27%2C%27d3%27%2C%27d4%27%2C%27d5%27%2C%27d6%27%5D%2Cdatasets%3A%5B%7Blabel%3A%273d+Electron+Spin+State%27%2Cdata%3A%5B1%2C1%2C1%2C1%2C1%2C1%5D%2CbackgroundColor%3A%27purple%27%7D%5D%7D&title=Octahedral+High+Spin+State+(Fe2%2B)",
         "question": "What is the spin-only magnetic moment of [Fe(H2O)6]2+ ion? (Fe Z=26)",
         "options": {"A": "2.83 BM", "B": "4.90 BM", "C": "5.92 BM", "D": "0.00 BM"},
         "correct": "B",
@@ -204,6 +208,7 @@ QUIZ_BANK = [
     {
         "id": "q3",
         "title": "Maths (10-Year High-Yield PYQ - Vectors & 3D)",
+        "diagram_url": "https://quickchart.io/chart?c=%7Btype%3A%27line%27%2Cdata%3A%7Blabels%3A%5B%27X%27%2C%27Y%27%2C%27Z%27%5D%2Cdatasets%3A%5B%7Blabel%3A%27Vector+A%27%2Cdata%3A%5B2%2C1%2C-1%5D%2CborderColor%3A%27green%27%7D%2C%7Blabel%3A%27Vector+B%27%2Cdata%3A%5B1%2C-1%2C1%5D%2CborderColor%3A%27purple%27%7D%5D%7D&title=3D+Vector+Component+Diagram",
         "question": "If vector a = 2i + j - k and b = i - j + k, what is the dot product a · b?",
         "options": {"A": "0", "B": "2", "C": "-1", "D": "4"},
         "correct": "A",
@@ -213,10 +218,20 @@ QUIZ_BANK = [
 
 
 async def cmd_quiz(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Generate a 10-year high-yield PYQ practice challenge."""
+    """Generate a 10-year high-yield PYQ practice challenge with visual diagram."""
     import random
     quiz_item = random.choice(QUIZ_BANK)
     q_id = quiz_item["id"]
+
+    if "diagram_url" in quiz_item:
+        try:
+            await update.message.reply_photo(
+                photo=quiz_item["diagram_url"],
+                caption=f"🖼️ *Visual Diagram for {quiz_item['id'].upper()}*",
+                parse_mode="Markdown"
+            )
+        except Exception as err:
+            logger.warning("Quiz photo send error: %s", err)
 
     quiz_text = (
         f"🎯 {quiz_item['title']}\n\n"
@@ -299,6 +314,18 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
 
     # Send typing indicator
     await update.message.chat.send_action("typing")
+
+    # Send visual diagram photo if query relates to visual concepts
+    diag_url = get_topic_diagram_url(user_text)
+    if diag_url:
+        try:
+            await update.message.reply_photo(
+                photo=diag_url,
+                caption="🖼️ *Visual Concept Diagram Guide*",
+                parse_mode="Markdown"
+            )
+        except Exception as err:
+            logger.warning("Diagram photo send error: %s", err)
 
     # Maintain conversational context for follow-up inputs (e.g. "1", "2", "option A", "v = u+at")
     last_turn = context.user_data.get("last_turn", "")

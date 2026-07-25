@@ -242,3 +242,28 @@ def parse_image(image_bytes: bytes, mime_type: str = "image/jpeg") -> VisionExtr
             raw_text="",
             question_summary="Image received! Please type your question text directly so I can guide you step-by-step.",
         )
+
+
+# ---------------------------------------------------------------------------
+# Visual Diagram Helper for Questions & Socratic Answers
+# ---------------------------------------------------------------------------
+
+def get_topic_diagram_url(query: str) -> Optional[str]:
+    """
+    Return a clean, high-resolution visual diagram image URL if the query or question
+    relates to visual concepts (Ray Optics, Circuits, Thermo P-V, Free Body Diagrams, Vectors).
+    """
+    if not query:
+        return None
+    q = query.lower()
+    if any(w in q for w in ["optics", "lens", "refraction", "mirror", "ray", "prism"]):
+        return "https://quickchart.io/chart?c=%7Btype%3A%27line%27%2Cdata%3A%7Blabels%3A%5B%27-2f%27%2C%27-f%27%2C%270%27%2C%27f%27%2C%272f%27%5D%2Cdatasets%3A%5B%7Blabel%3A%27Incident+Ray%27%2Cdata%3A%5B10%2C5%2C0%2C-5%2C-10%5D%2CborderColor%3A%27blue%27%7D%2C%7Blabel%3A%27Principal+Axis%27%2Cdata%3A%5B0%2C0%2C0%2C0%2C0%5D%2CborderColor%3A%27gray%27%7D%5D%7D%7D&title=Ray+Optics+Refraction+Diagram"
+    elif any(w in q for w in ["circuit", "kirchhoff", "ohm", "resistor", "wheatstone", "current"]):
+        return "https://quickchart.io/chart?c=%7Btype%3A%27bar%27%2Cdata%3A%7Blabels%3A%5B%27Loop+1%27%2C%27Loop+2%27%2C%27Branch+I3%27%5D%2Cdatasets%3A%5B%7Blabel%3A%27Current+Distribution+(A)%27%2Cdata%3A%5B2%2C1.5%2C3.5%5D%2CbackgroundColor%3A%27orange%27%7D%5D%7D&title=Kirchhoff+Circuit+Current+Distribution"
+    elif any(w in q for w in ["thermo", "pv", "carnot", "entropy", "adiabatic", "isothermal"]):
+        return "https://quickchart.io/chart?c=%7Btype%3A%27line%27%2Cdata%3A%7Blabels%3A%5B%27V1%27%2C%27V2%27%2C%27V3%27%2C%27V4%27%5D%2Cdatasets%3A%5B%7Blabel%3A%27P-V+Cycle%27%2Cdata%3A%5B100%2C50%2C20%2C70%5D%2CborderColor%3A%27red%27%7D%5D%7D&title=P-V+Thermodynamic+Cycle+Diagram"
+    elif any(w in q for w in ["force", "motion", "block", "free body", "fbd", "friction", "momentum", "law of motion"]):
+        return "https://quickchart.io/chart?c=%7Btype%3A%27radar%27%2Cdata%3A%7Blabels%3A%5B%27F_x+(Horizontal)%27%2C%27F_y+(Vertical)%27%2C%27Normal+Force%27%2C%27Gravity+(m%C2%B7g)%27%5D%2Cdatasets%3A%5B%7Blabel%3A%27Free+Body+Diagram%27%2Cdata%3A%5B10%2C17.3%2C49%2C49%5D%2CbackgroundColor%3A%27rgba(54,162,235,0.2)%27%7D%5D%7D&title=Free+Body+Force+Vector+Diagram"
+    elif any(w in q for w in ["vector", "dot product", "cross product", "3d", "coordinate"]):
+        return "https://quickchart.io/chart?c=%7Btype%3A%27line%27%2Cdata%3A%7Blabels%3A%5B%27X%27%2C%27Y%27%2C%27Z%27%5D%2Cdatasets%3A%5B%7Blabel%3A%27Vector+A%27%2Cdata%3A%5B2%2C1%2C-1%5D%2CborderColor%3A%27green%27%7D%2C%7Blabel%3A%27Vector+B%27%2Cdata%3A%5B1%2C-1%2C1%5D%2CborderColor%3A%27purple%27%7D%5D%7D&title=3D+Vector+Component+Diagram"
+    return None
