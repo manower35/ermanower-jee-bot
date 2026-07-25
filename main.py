@@ -111,20 +111,35 @@ def _format_vision_for_crew(vision: VisionExtractionResult, original_caption: st
 # ---------------------------------------------------------------------------
 
 async def cmd_start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Respond to the /start command with a short, clean welcome message."""
+    """Respond to the /start command with a complete workflow guide and interactive buttons."""
     welcome = (
-        "🎓 *ErManower JEE Bot*\n"
+        "🎓 *ErManower JEE & EAPCET Bot*\n"
         "_*Your AI Socratic Engineering Tutor*_\n\n"
-        "Welcome! I help you master concepts for:\n"
-        "• *IIT-JEE* (Main & Advanced)\n"
-        "• *TG EAPCET*\n"
-        "• *IPE Board*\n\n"
-        "💡 *How to use:*\n"
-        "Send your question as text or snap a photo of a problem. "
-        "I'll guide you step-by-step with principles, LaTeX formulas, and tactical hints!\n\n"
-        "🚀 *What topic would you like to explore today?*"
+        "Welcome! I help you master concepts for **IIT-JEE (Main/Adv)**, **TG EAPCET**, and **IPE Board**.\n\n"
+        "🛠️ *How to Use Me (Bot Workflow):*\n\n"
+        "1. 📚 *Ask Any Concept or Question*\n"
+        "   • Type your question directly (e.g., _\"Explain Kirchhoff's laws\"_)\n"
+        "   • Get 5-point Socratic hints & step-by-step guidance!\n\n"
+        "2. 📐 *Request Mathematical Proofs*\n"
+        "   • Ask for derivations (e.g., _\"derive Lens Maker formula\"_ or _\"proof 3rd law of motion\"_)\n\n"
+        "3. 🏆 *Play Interactive PYQ Quizzes*\n"
+        "   • Send /quiz to solve 10-year authentic PYQ MCQs with clickable buttons `[A]` `[B]` `[C]` `[D]`\n\n"
+        "4. 📸 *Photo Question Solver (OCR)*\n"
+        "   • Send a photo of any question from your book for instant AI solution guidance!\n\n"
+        "5. 🔥 *High-Yield 10-Year Chapter Lists*\n"
+        "   • Ask _\"top 5 physics 10-year PYQs\"_ or _\"important chemistry topics\"_\n\n"
+        "6. 🎛️ *Quick Subject Menu*\n"
+        "   • Send /menu anytime for interactive subject buttons\n\n"
+        "🚀 *Select an activity below or type your question to get started!*"
     )
-    await update.message.reply_text(welcome, parse_mode="Markdown")
+    keyboard = [
+        [
+            InlineKeyboardButton("🎛️ Open Subject Menu", callback_data="cmd_menu"),
+            InlineKeyboardButton("🎯 Start 10-Year PYQ Quiz", callback_data="cmd_quiz"),
+        ]
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    await update.message.reply_text(welcome, reply_markup=reply_markup, parse_mode="Markdown")
 
 
 # ---------------------------------------------------------------------------
