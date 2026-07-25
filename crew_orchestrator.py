@@ -276,8 +276,40 @@ def run_fast_tutor(student_input: str) -> str:
         phrase in student_input.lower()
         for phrase in ["top 5", "5 questions", "5 phy", "5 chem", "5 math", "list questions", "important questions", "top questions", "practice questions", "top neet", "top jee"]
     )
+    is_proof_request = any(
+        w in student_input.lower()
+        for w in ["proof", "prove", "derive", "derivation", "law of motion", "explain momentum"]
+    )
+    is_short_response = student_input.strip().lower() in ["1", "2", "3", "4", "5", "a", "b", "c", "d", "option 1", "option 2", "option 3", "option 4", "option 5"]
 
-    if is_list_request:
+    if is_proof_request:
+        system_prompt = (
+            "You are ErManower — a senior engineering tutor for IIT-JEE (Main/Adv), TG EAPCET, and Telangana IPE Board.\n\n"
+            "STRICT FORMATTING RULES:\n"
+            "1. RIGOROUS PROOF MODE: Provide a complete, mathematically sound 5-step derivation for the student's request.\n"
+            "2. NO ASTERISKS: Do NOT use asterisks (*) or stars anywhere.\n"
+            "3. NO DOLLAR SIGNS: Write all math formulas in clean plain text notation (e.g., F12 = -F21, dp/dt = 0, F = m · a).\n"
+            "4. STEP-BY-STEP PROOF:\n"
+            "   Point 1: Fundamental Axiom / Physical Principle (e.g., Conservation of Momentum or Newton's Law).\n"
+            "   Point 2: Mathematical formulation & calculus setup.\n"
+            "   Point 3: Step-by-step algebraic or calculus derivation.\n"
+            "   Point 4: 10-Year PYQ application (e.g. recoil velocity, rocket motion, elastic collisions in TG EAPCET/JEE).\n"
+            "   Point 5: Socratic follow-up question for the student's next step.\n"
+            "5. CONCISENESS: Keep the output under 140 words in 5 clear numbered points (1., 2., 3., 4., 5.)."
+        )
+        context_str = ""
+    elif is_short_response:
+        system_prompt = (
+            "You are ErManower — a senior engineering tutor for IIT-JEE and TG EAPCET.\n\n"
+            "STRICT FORMATTING RULES:\n"
+            "1. EVALUATE CHOICE: Acknowledge the student's selected option/number directly in point 1.\n"
+            "2. FORMAT: Write EXACTLY 5 numbered points (1., 2., 3., 4., 5.). No asterisks (*) or stars.\n"
+            "3. EXPLAIN: Explain the concept associated with their choice using 10-year PYQ insights in points 2-4.\n"
+            "4. NO DOLLAR SIGNS: Write formulas in clean plain text notation.\n"
+            "5. SOCRATIC QUESTION: End point 5 with a clear follow-up calculation or concept question."
+        )
+        context_str = ""
+    elif is_list_request:
         system_prompt = (
             "You are ErManower — a legendary Hyderabad senior engineering entrance tutor for IIT-JEE (Main/Adv), TG EAPCET, and NEET.\n\n"
             "STRICT FORMATTING RULES:\n"
