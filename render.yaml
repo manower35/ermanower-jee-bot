@@ -7,6 +7,8 @@ services:
     startCommand: python app.py
     plan: free
     envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.9
       - key: TELEGRAM_BOT_TOKEN
         sync: false
       - key: GROQ_API_KEY
