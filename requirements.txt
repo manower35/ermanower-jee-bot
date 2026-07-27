@@ -1,13 +1,8 @@
-# ErManower JEE Bot — Production Dependencies
+# ErManower JEE Bot — Production Dependencies (Lightweight)
 python-telegram-bot>=20.0
-crewai>=0.30.0
-langchain>=0.2.0
-langchain-chroma>=0.1.0
-langchain-groq>=0.1.0
-google-genai>=0.1.0
 groq>=0.18.0
+google-genai>=0.1.0
 pydantic>=2.0.0
-chromadb>=0.4.0
 Pillow>=10.0.0
 httpx>=0.27.0
 python-dotenv>=1.0.0
