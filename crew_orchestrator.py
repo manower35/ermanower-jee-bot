@@ -1,10 +1,8 @@
 """
-ErManower JEE Bot — CrewAI Multi-Agent Orchestrator
-===================================================
-Assembles a sequential three-agent crew:
-  1. Exam Context Analyst — tags subject and exam from student input.
-  2. Knowledge Bank Retriever — searches the Chroma vector store.
-  3. Socratic Senior Tutor — synthesizes a guided, hint-based response.
+ErManower JEE Bot — Socratic Tutor Engine
+==========================================
+Ultra-low-latency Socratic Tutor using Groq's llama-3.3-70b-versatile model
+with local NCERT/JEE RAG context retrieval.
 """
 
 from __future__ import annotations
@@ -14,224 +12,15 @@ import logging
 import os
 from typing import Optional
 
-from crewai import Agent, Crew, Process, Task
-from crewai.tools import tool
-from langchain_groq import ChatGroq
 from pydantic import BaseModel, Field
 
 from database import search_knowledge_bank
 
-import litellm
-litellm.drop_params = True
-_orig_completion = litellm.completion
-
-def _clean_completion(*args, **kwargs):
-    if "messages" in kwargs and isinstance(kwargs["messages"], list):
-        for msg in kwargs["messages"]:
-            if isinstance(msg, dict):
-                msg.pop("cache_breakpoint", None)
-                msg.pop("cache_control", None)
-    return _orig_completion(*args, **kwargs)
-
-litellm.completion = _clean_completion
-
 logger = logging.getLogger(__name__)
 
-# ---------------------------------------------------------------------------
-# Configure CrewAI to use Groq Llama 3.3 70B (free, ultra-fast)
-# ---------------------------------------------------------------------------
-_groq_llm = "groq/llama-3.3-70b-versatile"
 
 
 
-# ═══════════════════════════════════════════════════════════════════════════
-# CrewAI Tool — Knowledge Bank Search
-# ═══════════════════════════════════════════════════════════════════════════
-
-class KnowledgeBankSearchInput(BaseModel):
-    """Input schema for the knowledge bank search tool."""
-    query: str = Field(..., description="Natural language search query about the student's problem.")
-    exam: Optional[str] = Field(
-        default=None,
-        description="Exam filter: JEE_MAIN, JEE_ADVANCED, TG_EAPCET, or IPE_BOARD.",
-    )
-    subject: Optional[str] = Field(
-        default=None,
-        description="Subject filter: Maths, Physics, or Chemistry.",
-    )
-
-
-@tool("knowledge_bank_search")
-def knowledge_bank_search_tool(
-    query: str,
-    exam: str = "",
-    subject: str = "",
-) -> str:
-    """
-    Search the ErManower knowledge bank for relevant formulas, textbook notes,
-    and previous year questions (PYQs). Apply exam and subject filters to
-    narrow results before semantic matching.
-    """
-    results = search_knowledge_bank(
-        query=query,
-        exam=exam if exam else None,
-        subject=subject if subject else None,
-        top_k=5,
-    )
-
-    if not results:
-        return json.dumps({"results": [], "message": "No matching documents found in the knowledge bank."})
-
-    return json.dumps({"results": results}, ensure_ascii=False, default=str)
-
-
-# ═══════════════════════════════════════════════════════════════════════════
-# Agent Definitions
-# ═══════════════════════════════════════════════════════════════════════════
-
-_EXAM_CONTEXT_ANALYST = Agent(
-    role="Exam Context Analyst",
-    goal=(
-        "Analyze the student's query (text and/or vision extraction output) to "
-        "identify the exact academic subject (Maths, Physics, or Chemistry) and "
-        "the target exam standard (JEE_MAIN, JEE_ADVANCED, TG_EAPCET, or IPE_BOARD). "
-        "Produce a concise context tag that downstream agents can use for retrieval "
-        "and response calibration."
-    ),
-    backstory=(
-        "You are a seasoned Indian engineering entrance exam analyst with deep "
-        "knowledge of IIT-JEE (Main & Advanced), Telangana EAPCET, and Intermediate "
-        "Public Examinations (IPE) Board curricula. You can instantly recognize "
-        "question patterns, syllabus boundaries, difficulty tiers, and exam-specific "
-        "formatting conventions from minimal input cues."
-    ),
-    verbose=False,
-    allow_delegation=False,
-    llm=_groq_llm,
-)
-
-_KNOWLEDGE_BANK_RETRIEVER = Agent(
-    role="Knowledge Bank Retriever",
-    goal=(
-        "Using the subject and exam tags provided by the Exam Context Analyst, "
-        "search the vector knowledge bank to retrieve the most relevant formulas, "
-        "theorems, textbook excerpts, and previous year questions (PYQs) that "
-        "directly address the student's problem."
-    ),
-    backstory=(
-        "You are a precision-oriented research assistant specialized in JEE and "
-        "EAPCET academic databases. You use metadata-prefiltered semantic search "
-        "to find the exact reference material a student needs. You always include "
-        "source metadata (exam year, question number) when available."
-    ),
-    tools=[knowledge_bank_search_tool],
-    verbose=False,
-    allow_delegation=False,
-    llm=_groq_llm,
-)
-
-_SOCRATIC_SENIOR_TUTOR = Agent(
-    role="Socratic Senior Tutor",
-    goal=(
-        "Synthesize a pedagogically excellent student response that teaches through "
-        "guided discovery. NEVER reveal the final answer or option directly. Instead: "
-        "(1) State the governing physical/mathematical/chemical principle, "
-        "(2) Display all relevant formulas using block LaTeX ($$...$$), "
-        "(3) Present a tactical hint that prompts the student for their next step, "
-        "(4) If PYQ data is available, mention the exam year and question context."
-    ),
-    backstory=(
-        "You are ErManower — a legendary senior JEE tutor renowned across Telangana "
-        "and Andhra Pradesh for your Socratic teaching style. You believe students "
-        "learn best when they derive insights themselves. You never spoon-feed "
-        "answers; instead, you illuminate the path with principles, formulas, and "
-        "strategic hints. Your explanations are crisp, LaTeX-formatted, and deeply "
-        "rooted in NCERT/JEE-level rigor. You address students warmly and "
-        "encourage them to take the next reasoning step."
-    ),
-    verbose=False,
-    allow_delegation=False,
-    llm=_groq_llm,
-)
-
-
-# ═══════════════════════════════════════════════════════════════════════════
-# Task Definitions Factory
-# ═══════════════════════════════════════════════════════════════════════════
-
-def _build_tasks(student_input: str) -> list[Task]:
-    """
-    Construct the sequential task chain for the crew.
-
-    Parameters
-    ----------
-    student_input : str
-        Combined textual representation of the student query, including any
-        vision extraction JSON.
-    """
-    task_analyse = Task(
-        description=(
-            f"Analyze the following student input and identify:\n"
-            f"1. The academic subject (Maths / Physics / Chemistry)\n"
-            f"2. The target exam (JEE_MAIN / JEE_ADVANCED / TG_EAPCET / IPE_BOARD)\n"
-            f"3. A concise one-line summary of the core question\n\n"
-            f"--- STUDENT INPUT ---\n{student_input}\n--- END ---\n\n"
-            f"Return your analysis as a structured block with fields: "
-            f"subject, exam, question_summary."
-        ),
-        expected_output=(
-            "A structured analysis containing: subject (Maths/Physics/Chemistry), "
-            "exam (JEE_MAIN/JEE_ADVANCED/TG_EAPCET/IPE_BOARD), and a concise "
-            "question_summary string."
-        ),
-        agent=_EXAM_CONTEXT_ANALYST,
-    )
-
-    task_retrieve = Task(
-        description=(
-            "Using the subject and exam context from the previous analysis, "
-            "call the knowledge_bank_search tool to retrieve up to 5 relevant "
-            "documents including formulas, theorems, textbook notes, and PYQs. "
-            "Pass the question_summary as the query string, and the detected "
-            "subject and exam as filter parameters.\n\n"
-            "Compile all retrieved content into a structured reference block "
-            "that the tutor agent can use."
-        ),
-        expected_output=(
-            "A compiled reference block containing all retrieved formulas, "
-            "theorems, textbook notes, and PYQ references with their source "
-            "metadata and relevance scores."
-        ),
-        agent=_KNOWLEDGE_BANK_RETRIEVER,
-    )
-
-    task_tutor = Task(
-        description=(
-            "You are responding to a student preparing for an Indian engineering "
-            "entrance exam. Using the context analysis and retrieved reference "
-            "material from previous agents, compose your Socratic teaching response.\n\n"
-            "RULES:\n"
-            "- NEVER give the final answer or option directly.\n"
-            "- State the governing principle/theorem/law clearly.\n"
-            "- Display ALL relevant formulas using block LaTeX: $$formula$$\n"
-            "- Provide a tactical hint that guides the student to the next step.\n"
-            "- If PYQ data is available, mention the exam year and question context.\n"
-            "- End with an encouraging prompt asking the student what they think "
-            "the next step should be.\n"
-            "- Keep the response clear, structured, and under 600 words.\n"
-            "- Use Telegram-compatible formatting (Markdown V2 is NOT used; "
-            "plain text with LaTeX blocks is preferred).\n\n"
-            f"--- ORIGINAL STUDENT INPUT ---\n{student_input}\n--- END ---"
-        ),
-        expected_output=(
-            "A Socratic teaching response with: governing principle, LaTeX-formatted "
-            "formulas ($$...$$), a tactical hint, optional PYQ reference, and an "
-            "encouraging closing prompt for the student."
-        ),
-        agent=_SOCRATIC_SENIOR_TUTOR,
-    )
-
-    return [task_analyse, task_retrieve, task_tutor]
 
 
 # ═══════════════════════════════════════════════════════════════════════════

@@ -14,8 +14,7 @@ import logging
 import os
 from typing import Optional
 
-from langchain_core.documents import Document
-from langchain_core.embeddings import Embeddings
+
 
 logger = logging.getLogger(__name__)
 
@@ -226,7 +225,7 @@ DEFAULT_NCERT_KNOWLEDGE_BANK = [
 # Simple Local Embedding & In-Memory Storage (Fail-Safe)
 # ---------------------------------------------------------------------------
 
-class _SimpleEmbeddings(Embeddings):
+class _SimpleEmbeddings:
     """Deterministic, zero-dependency embedding implementation."""
     def embed_documents(self, texts: list[str]) -> list[list[float]]:
         return [self._hash_embed(t) for t in texts]
