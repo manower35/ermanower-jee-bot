@@ -3,12 +3,13 @@ ErManower JEE Bot — Gradio Web Interface & Telegram Background Host
 ====================================================================
 Runs both:
   1. Telegram Bot (python-telegram-bot) in a background thread 24/7.
-  2. Gradio Web Interface for 100% free hosting on Hugging Face Spaces (Gradio SDK).
+  2. Gradio Web Interface for hosting on Render / Hugging Face.
 """
 
 import asyncio
 import os
 import threading
+import traceback
 import gradio as gr
 from dotenv import load_dotenv
 
@@ -30,13 +31,14 @@ def _start_telegram_bot():
         bot_main.main()
     except Exception as exc:
         print(f"[Gradio Host] Telegram bot error: {exc}")
+        traceback.print_exc()
 
 # Launch Telegram bot background thread
 bot_thread = threading.Thread(target=_start_telegram_bot, daemon=True)
 bot_thread.start()
 
 # ---------------------------------------------------------------------------
-# Gradio Web Interface for Hugging Face Preview
+# Gradio Web Interface
 # ---------------------------------------------------------------------------
 def respond(message: str, history: list) -> str:
     """Pass web chat message to ErManower Socratic engine."""
@@ -59,4 +61,6 @@ demo = gr.ChatInterface(
 )
 
 if __name__ == "__main__":
-    demo.launch(server_name="0.0.0.0", server_port=7860)
+    port = int(os.environ.get("PORT", 7860))
+    print(f"[Gradio Host] Launching web interface on port {port}")
+    demo.launch(server_name="0.0.0.0", server_port=port)
