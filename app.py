@@ -3,12 +3,14 @@ ErManower JEE Bot — Gradio Web Interface & Telegram Background Host
 ====================================================================
 Runs both:
   1. Telegram Bot (python-telegram-bot) in a background thread 24/7.
-  2. Gradio Web Interface for hosting on Render / Hugging Face.
+  2. Gradio Web Interface for hosting on Render.
+  3. Self-ping keep-alive thread to prevent Render free tier sleep.
 """
 
 import asyncio
 import os
 import threading
+import time
 import traceback
 import gradio as gr
 from dotenv import load_dotenv
@@ -36,6 +38,25 @@ def _start_telegram_bot():
 # Launch Telegram bot background thread
 bot_thread = threading.Thread(target=_start_telegram_bot, daemon=True)
 bot_thread.start()
+
+# ---------------------------------------------------------------------------
+# Keep-Alive Self-Ping (Prevents Render Free Tier Sleep)
+# ---------------------------------------------------------------------------
+def _keep_alive():
+    """Ping own URL every 10 minutes to prevent Render free tier shutdown."""
+    import httpx
+    url = os.environ.get("RENDER_EXTERNAL_URL", "https://ermanower-jee-bot.onrender.com")
+    print(f"[Keep-Alive] Starting self-ping loop for: {url}")
+    while True:
+        time.sleep(600)  # Wait 10 minutes
+        try:
+            resp = httpx.get(url, timeout=30)
+            print(f"[Keep-Alive] Ping OK — status={resp.status_code}")
+        except Exception as err:
+            print(f"[Keep-Alive] Ping failed: {err}")
+
+keep_alive_thread = threading.Thread(target=_keep_alive, daemon=True)
+keep_alive_thread.start()
 
 # ---------------------------------------------------------------------------
 # Gradio Web Interface
