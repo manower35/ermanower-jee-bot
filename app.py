@@ -5,35 +5,42 @@ Runs both:
   1. Telegram Bot (python-telegram-bot) in a background thread 24/7.
   2. Gradio Web Interface for hosting on Render.
   3. Self-ping keep-alive thread to prevent Render free tier sleep.
+  4. Auto-restart if Telegram bot thread crashes.
 """
 
 import asyncio
 import os
+import sys
 import threading
 import time
 import traceback
-import gradio as gr
-from dotenv import load_dotenv
 
+from dotenv import load_dotenv
 load_dotenv()
 
-from crew_orchestrator import run_crew
-import main as bot_main
-
 # ---------------------------------------------------------------------------
-# Background Thread for Telegram Bot Polling
+# Background Thread for Telegram Bot Polling (with auto-restart)
 # ---------------------------------------------------------------------------
 def _start_telegram_bot():
     token = os.environ.get("TELEGRAM_BOT_TOKEN", "")
     if not token:
-        print("[Gradio Host] TELEGRAM_BOT_TOKEN not set in environment secrets.")
+        print("[Bot Thread] TELEGRAM_BOT_TOKEN not set. Skipping bot.", flush=True)
         return
-    print("[Gradio Host] Starting Telegram Bot polling loop in background...")
-    try:
-        bot_main.main()
-    except Exception as exc:
-        print(f"[Gradio Host] Telegram bot error: {exc}")
-        traceback.print_exc()
+
+    # Delay to let Gradio web server start first
+    time.sleep(5)
+
+    while True:
+        try:
+            print("[Bot Thread] Starting Telegram Bot polling...", flush=True)
+            # Import here to avoid circular imports and catch import errors
+            import main as bot_main
+            bot_main.main()
+        except Exception as exc:
+            print(f"[Bot Thread] Telegram bot crashed: {exc}", flush=True)
+            traceback.print_exc()
+            print("[Bot Thread] Restarting in 10 seconds...", flush=True)
+            time.sleep(10)  # Wait before auto-restart
 
 # Launch Telegram bot background thread
 bot_thread = threading.Thread(target=_start_telegram_bot, daemon=True)
@@ -46,14 +53,15 @@ def _keep_alive():
     """Ping own URL every 10 minutes to prevent Render free tier shutdown."""
     import httpx
     url = os.environ.get("RENDER_EXTERNAL_URL", "https://ermanower-jee-bot.onrender.com")
-    print(f"[Keep-Alive] Starting self-ping loop for: {url}")
+    print(f"[Keep-Alive] Self-ping target: {url}", flush=True)
+    time.sleep(60)  # Wait 1 min for server to fully start
     while True:
-        time.sleep(600)  # Wait 10 minutes
         try:
             resp = httpx.get(url, timeout=30)
-            print(f"[Keep-Alive] Ping OK — status={resp.status_code}")
+            print(f"[Keep-Alive] Ping OK — status={resp.status_code}", flush=True)
         except Exception as err:
-            print(f"[Keep-Alive] Ping failed: {err}")
+            print(f"[Keep-Alive] Ping failed: {err}", flush=True)
+        time.sleep(600)  # Every 10 minutes
 
 keep_alive_thread = threading.Thread(target=_keep_alive, daemon=True)
 keep_alive_thread.start()
@@ -61,11 +69,17 @@ keep_alive_thread.start()
 # ---------------------------------------------------------------------------
 # Gradio Web Interface
 # ---------------------------------------------------------------------------
+import gradio as gr
+from crew_orchestrator import run_crew
+
 def respond(message: str, history: list) -> str:
     """Pass web chat message to ErManower Socratic engine."""
     if not message or not message.strip():
         return "Please enter a valid question."
-    return run_crew(message.strip())
+    try:
+        return run_crew(message.strip())
+    except Exception as e:
+        return f"Error: {e}"
 
 demo = gr.ChatInterface(
     fn=respond,
@@ -83,5 +97,5 @@ demo = gr.ChatInterface(
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 7860))
-    print(f"[Gradio Host] Launching web interface on port {port}")
+    print(f"[Gradio Host] Launching web interface on port {port}", flush=True)
     demo.launch(server_name="0.0.0.0", server_port=port)
