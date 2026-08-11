@@ -52,7 +52,11 @@ bot_thread.start()
 def _keep_alive():
     """Ping own URL every 10 minutes to prevent Render free tier shutdown."""
     import httpx
-    url = os.environ.get("RENDER_EXTERNAL_URL", "https://ermanower-jee-bot.onrender.com")
+    koyeb_domain = os.environ.get("KOYEB_PUBLIC_DOMAIN", "")
+    if koyeb_domain:
+        url = f"https://{koyeb_domain}"
+    else:
+        url = os.environ.get("RENDER_EXTERNAL_URL", "https://ermanower-jee-bot.onrender.com")
     print(f"[Keep-Alive] Self-ping target: {url}", flush=True)
     time.sleep(60)  # Wait 1 min for server to fully start
     while True:
