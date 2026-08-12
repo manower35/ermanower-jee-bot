@@ -478,15 +478,23 @@ async def error_handler(update: object, context: ContextTypes.DEFAULT_TYPE) -> N
 
 def main() -> None:
     """Build and launch the Telegram application."""
-    if not TELEGRAM_BOT_TOKEN:
+    token = os.environ.get("TELEGRAM_BOT_TOKEN", TELEGRAM_BOT_TOKEN)
+    if not token:
         logger.critical("TELEGRAM_BOT_TOKEN environment variable is not set. Exiting.")
-        sys.exit(1)
+        return
+
+    # Ensure a dedicated asyncio event loop exists in this thread
+    try:
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+    except Exception as exc:
+        logger.warning("Event loop setup in thread: %s", exc)
 
     logger.info("Starting ErManower JEE Bot...")
 
     app = (
         Application.builder()
-        .token(TELEGRAM_BOT_TOKEN)
+        .token(token)
         .connect_timeout(30.0)
         .read_timeout(30.0)
         .pool_timeout(30.0)
@@ -513,8 +521,10 @@ def main() -> None:
     app.run_polling(
         allowed_updates=Update.ALL_TYPES,
         drop_pending_updates=True,
+        stop_signals=None,  # CRITICAL: Disable signal handling in background thread!
     )
 
 
 if __name__ == "__main__":
     main()
+
