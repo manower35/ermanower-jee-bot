@@ -1,10 +1,14 @@
 """
-ErManower JEE Bot — Core Application Entry Point
-==================================================
+ErManower JEE Bot — Core Application Entry Point (Advanced AI Edition)
+=======================================================================
 Asynchronous Telegram runtime using python-telegram-bot >= 20.0.
-Handles text messages and high-resolution photo inputs.
-Offloads synchronous CrewAI workflows to a thread pool executor
-to keep the Telegram event loop fully non-blocking.
+Features:
+  • 3-Tier Adaptive Difficulty Quizzes (Level 1 EAPCET, Level 2 JEE Main, Level 3 Advanced)
+  • Interactive "Show Hint" & Next Question Buttons
+  • Dedicated Commands: /formula, /trick, /compare, /mistakes, /stats, /quiz, /menu
+  • Real-time Student Accuracy Scorecard & Streak Tracker
+  • Multimodal Vision OCR with Google Gemini 2.0 Flash
+  • High-Speed Socratic AI Engine with Groq Llama 3.3 70B
 """
 
 from __future__ import annotations
@@ -16,6 +20,7 @@ import asyncio
 import json
 import logging
 import os
+import random
 import sys
 from concurrent.futures import ThreadPoolExecutor
 from functools import partial
@@ -31,7 +36,7 @@ from telegram.ext import (
 )
 
 from crew_orchestrator import run_crew
-from utils import VisionExtractionResult, parse_image, parse_text_query
+from utils import VisionExtractionResult, parse_image, parse_text_query, get_topic_diagram_url
 
 # ---------------------------------------------------------------------------
 # Logging configuration
@@ -46,7 +51,7 @@ logging.basicConfig(
 logger = logging.getLogger("ermanower")
 
 # ---------------------------------------------------------------------------
-# Thread pool for blocking CrewAI calls
+# Thread pool for blocking AI calls
 # ---------------------------------------------------------------------------
 
 _EXECUTOR = ThreadPoolExecutor(max_workers=4, thread_name_prefix="crewai")
@@ -107,135 +112,289 @@ def _format_vision_for_crew(vision: VisionExtractionResult, original_caption: st
 
 
 # ---------------------------------------------------------------------------
-# /start command handler
+# Advanced 3-Tier Multi-Level QUIZ_BANK
+# ---------------------------------------------------------------------------
+
+QUIZ_BANK = [
+    # LEVEL 1: TG EAPCET / IPE BOARD (Formula & Concept Application)
+    {
+        "id": "q_eapcet_1",
+        "level": "🟢 Level 1 (TG EAPCET / IPE)",
+        "subject": "Physics",
+        "title": "Laws of Motion & Friction",
+        "diagram_url": "https://quickchart.io/chart?c=%7Btype%3A%27radar%27%2Cdata%3A%7Blabels%3A%5B%27F_x%27%2C%27F_y%27%2C%27Normal%27%2C%27Gravity%27%5D%2Cdatasets%3A%5B%7Blabel%3A%27Forces%27%2Cdata%3A%5B10%2C17.3%2C49%2C49%5D%7D%5D%7D&title=Free+Body+Diagram",
+        "question": "A 5 kg block rests on a smooth horizontal surface. A force F = 20 N acts at 60° to the horizontal. What is the horizontal acceleration?",
+        "options": {"A": "1.0 m/s²", "B": "2.0 m/s²", "C": "4.0 m/s²", "D": "0.5 m/s²"},
+        "correct": "B",
+        "hint": "Resolve force along horizontal: F_x = F · cos(60°). Then apply Newton's 2nd Law (F_x = m · a).",
+        "explanation": "1. Key Concept: Horizontal component F · cos 60° accelerates the body.\n2. Formula: a = (F · cos 60°) / m\n3. Calculation: F · cos 60° = 20 · 0.5 = 10 N ➔ a = 10 / 5 = 2.0 m/s²."
+    },
+    {
+        "id": "q_eapcet_2",
+        "level": "🟢 Level 1 (TG EAPCET / IPE)",
+        "subject": "Maths",
+        "title": "Vectors & 3D Geometry",
+        "diagram_url": "https://quickchart.io/chart?c=%7Btype%3A%27line%27%2Cdata%3A%7Blabels%3A%5B%27X%27%2C%27Y%27%2C%27Z%27%5D%2Cdatasets%3A%5B%7Blabel%3A%27Vector+A%27%2Cdata%3A%5B2%2C1%2C-1%5D%7D%2C%7Blabel%3A%27Vector+B%27%2Cdata%3A%5B1%2C-1%2C1%5D%7D%5D%7D&title=Vector+Dot+Product",
+        "question": "If vector a = 2i + j - k and b = i - j + k, what is the scalar dot product a · b?",
+        "options": {"A": "0 (Perpendicular)", "B": "2", "C": "-1", "D": "4"},
+        "correct": "A",
+        "hint": "Calculate ax·bx + ay·by + az·bz. If sum is 0, the angle between vectors is 90°.",
+        "explanation": "1. Formula: a · b = (2)(1) + (1)(-1) + (-1)(1) = 2 - 1 - 1 = 0.\n2. Conclusion: Since a · b = 0, vectors are mutually perpendicular."
+    },
+    {
+        "id": "q_eapcet_3",
+        "level": "🟢 Level 1 (TG EAPCET / IPE)",
+        "subject": "Chemistry",
+        "title": "Solutions & Colligative Properties",
+        "question": "Which of the following 0.1 M aqueous solutions will exhibit the MAXIMUM boiling point elevation?",
+        "options": {"A": "0.1 M Glucose", "B": "0.1 M NaCl", "C": "0.1 M BaCl2", "D": "0.1 M Urea"},
+        "correct": "C",
+        "hint": "Elevation in boiling point deltaTb = i · Kb · m. Find which solute gives the highest van 't Hoff factor (i).",
+        "explanation": "1. Key Concept: deltaTb depends on van 't Hoff factor (i).\n2. Ionization: BaCl2 dissociates into Ba2+ + 2Cl- (i = 3).\n3. Comparison: Glucose (i=1), NaCl (i=2), BaCl2 (i=3). BaCl2 gives highest boiling point."
+    },
+
+    # LEVEL 2: JEE MAIN / NEET (Multi-Concept & Numerical Traps)
+    {
+        "id": "q_jee_1",
+        "level": "🟡 Level 2 (JEE Main / NEET)",
+        "subject": "Physics",
+        "title": "Current Electricity (Kirchhoff's & Resistance)",
+        "diagram_url": "https://quickchart.io/chart?c=%7Btype%3A%27bar%27%2Cdata%3A%7Blabels%3A%5B%27R1%27%2C%27R2%27%2C%27R3%27%5D%2Cdatasets%3A%5B%7Blabel%3A%27Resistance+(Ohms)%27%2Cdata%3A%5B2%2C3%2C6%5D%7D%5D%7D&title=Parallel+Resistance+Network",
+        "question": "Three resistors of 2 Ω, 3 Ω, and 6 Ω are connected in parallel across a 12 V battery. What is the total current drawn from the battery?",
+        "options": {"A": "6 A", "B": "12 A", "C": "4 A", "D": "2 A"},
+        "correct": "B",
+        "hint": "First calculate equivalent parallel resistance: 1/Req = 1/2 + 1/3 + 1/6. Then apply Ohm's law I = V / Req.",
+        "explanation": "1. Parallel Req: 1/Req = 3/6 + 2/6 + 1/6 = 6/6 = 1 ➔ Req = 1 Ω.\n2. Total Current: I = V / Req = 12 V / 1 Ω = 12 A."
+    },
+    {
+        "id": "q_jee_2",
+        "level": "🟡 Level 2 (JEE Main / NEET)",
+        "subject": "Chemistry",
+        "title": "Coordination Chemistry (Crystal Field Theory)",
+        "diagram_url": "https://quickchart.io/chart?c=%7Btype%3A%27bar%27%2Cdata%3A%7Blabels%3A%5B%27d1%27%2C%27d2%27%2C%27d3%27%2C%27d4%27%2C%27d5%27%2C%27d6%27%5D%2Cdatasets%3A%5B%7Blabel%3A%273d+Spin%27%2Cdata%3A%5B1%2C1%2C1%2C1%2C1%2C1%5D%7D%5D%7D&title=Octahedral+Spin+State",
+        "question": "What is the spin-only magnetic moment (in Bohr Magnetons) of [Fe(H2O)6]2+ ion? (Fe atomic number Z = 26)",
+        "options": {"A": "2.83 BM", "B": "4.90 BM", "C": "5.92 BM", "D": "0.00 BM"},
+        "correct": "B",
+        "hint": "Fe(II) has 3d6 configuration. H2O is a weak field ligand (high spin), so pairing does not occur in t2g. Count unpaired electrons (n).",
+        "explanation": "1. Electron configuration: Fe2+ = 3d6 (t2g4 eg2 in weak field) ➔ n = 4 unpaired electrons.\n2. Formula: μ = √(n(n + 2)) = √(4 · 6) = √24 ≈ 4.90 BM."
+    },
+    {
+        "id": "q_jee_3",
+        "level": "🟡 Level 2 (JEE Main / NEET)",
+        "subject": "Maths",
+        "title": "Calculus (Definite Integration)",
+        "question": "Evaluate integral I = ∫[0 to π/2] (sin x) / (sin x + cos x) dx:",
+        "options": {"A": "π", "B": "π / 2", "C": "π / 4", "D": "0"},
+        "correct": "C",
+        "hint": "Apply Kings Property: ∫[0 to a] f(x) dx = ∫[0 to a] f(a - x) dx. Then add 2I = ∫[0 to π/2] 1 dx.",
+        "explanation": "1. King's Rule: I = ∫ (cos x) / (cos x + sin x) dx.\n2. Adding: 2I = ∫[0 to π/2] 1 dx = [x][0 to π/2] = π/2.\n3. Result: I = π / 4."
+    },
+
+    # LEVEL 3: JEE ADVANCED (Calculus Dynamics & Multi-Step Derivations)
+    {
+        "id": "q_adv_1",
+        "level": "🔴 Level 3 (JEE Advanced)",
+        "subject": "Physics",
+        "title": "Rotational Mechanics (Rolling without Slipping)",
+        "question": "A solid cylinder and a hollow sphere of equal mass and radius roll down an inclined plane from rest without slipping. Which reaches the bottom first?",
+        "options": {"A": "Solid Cylinder", "B": "Hollow Sphere", "C": "Both together", "D": "Depends on incline angle"},
+        "correct": "A",
+        "hint": "Acceleration down incline is a = (g · sin θ) / (1 + I / (m·R²)). The body with smaller moment of inertia ratio (I / mR²) has higher acceleration.",
+        "explanation": "1. Moment of Inertia: Solid Cylinder = 1/2 mR² (k=0.5). Hollow Sphere = 2/3 mR² (k=0.67).\n2. Acceleration: a = (g sin θ) / (1 + k). Smaller k yields larger acceleration.\n3. Conclusion: Solid cylinder has higher acceleration and reaches the bottom first."
+    },
+    {
+        "id": "q_adv_2",
+        "level": "🔴 Level 3 (JEE Advanced)",
+        "subject": "Chemistry",
+        "title": "Organic Chemistry (Aromaticity & Carbocation Stability)",
+        "question": "Which of the following carbocations is non-aromatic / anti-aromatic and least stable?",
+        "options": {"A": "Tropylium cation (C7H7+)", "B": "Cyclopropenyl cation (C3H3+)", "C": "Cyclopentadienyl cation (C5H5+)", "D": "Benzyl cation (C7H7+)"},
+        "correct": "C",
+        "hint": "Check Huckel's rule: (4n + 2) pi electrons = Aromatic, (4n) pi electrons = Anti-Aromatic (highly unstable).",
+        "explanation": "1. Cyclopentadienyl cation has 4 pi electrons (n=1 in 4n) in a planar conjugated ring.\n2. By Huckel's rule, 4 pi electrons = Anti-Aromatic, making it extremely unstable."
+    }
+]
+
+
+# ---------------------------------------------------------------------------
+# /start & /menu command handlers
 # ---------------------------------------------------------------------------
 
 async def cmd_start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Respond to the /start command with a complete workflow guide and interactive buttons."""
+    """Respond to /start with full interactive workflow guide."""
     welcome = (
-        "🎓 *ErManower JEE & EAPCET Bot*\n"
-        "_*Your AI Socratic Engineering Tutor*_\n\n"
-        "Welcome! I help you master concepts for **IIT-JEE (Main/Adv)**, **TG EAPCET**, and **IPE Board**.\n\n"
-        "🛠️ *How to Use Me (Bot Workflow):*\n\n"
-        "1. 📚 *Ask Any Concept or Question*\n"
-        "   • Type your question directly (e.g., _\"Explain Kirchhoff's laws\"_)\n"
-        "   • Get 5-point Socratic hints & step-by-step guidance!\n\n"
-        "2. 📐 *Request Mathematical Proofs*\n"
-        "   • Ask for derivations (e.g., _\"derive Lens Maker formula\"_ or _\"proof 3rd law of motion\"_)\n\n"
-        "3. 🏆 *Play Interactive PYQ Quizzes*\n"
-        "   • Send /quiz to solve 10-year authentic PYQ MCQs with clickable buttons `[A]` `[B]` `[C]` `[D]`\n\n"
-        "4. 📸 *Photo Question Solver (OCR)*\n"
-        "   • Send a photo of any question from your book for instant AI solution guidance!\n\n"
-        "5. 🔥 *High-Yield 10-Year Chapter Lists*\n"
-        "   • Ask _\"top 5 physics 10-year PYQs\"_ or _\"important chemistry topics\"_\n\n"
-        "6. 🎛️ *Quick Subject Menu*\n"
-        "   • Send /menu anytime for interactive subject buttons\n\n"
-        "🚀 *Select an activity below or type your question to get started!*"
+        "🎓 *ErManower JEE & EAPCET Bot (Advanced AI Edition)*\n"
+        "_*Your 24/7 AI Socratic Engineering & Medical Entrance Tutor*_\n\n"
+        "Welcome! I help you master **IIT-JEE (Main & Adv)**, **TG EAPCET**, and **NEET**.\n\n"
+        "⚡ *Quick AI Power Commands:*\n"
+        "• `/formula <topic>` ➔ Instant Compact Formula Card\n"
+        "• `/trick <topic>` ➔ 10-Second Exam Shortcuts & Elimination\n"
+        "• `/compare <A vs B>` ➔ Comparative Tabular Breakdown\n"
+        "• `/mistakes <topic>` ➔ Top 5 Negative Marking Traps\n"
+        "• `/quiz` ➔ 3-Tier Adaptive PYQ Challenge with Hints\n"
+        "• `/stats` ➔ View your Accuracy Scorecard & Streak\n"
+        "• `/menu` ➔ Open Interactive Subject Hub\n\n"
+        "📸 *Photo OCR:* Snap any question from your book for instant Socratic guidance!\n\n"
+        "🚀 *Choose an action below or ask any question to get started:*"
     )
     keyboard = [
         [
-            InlineKeyboardButton("🎛️ Open Subject Menu", callback_data="cmd_menu"),
-            InlineKeyboardButton("🎯 Start 10-Year PYQ Quiz", callback_data="cmd_quiz"),
+            InlineKeyboardButton("🎛️ Subject Menu", callback_data="cmd_menu"),
+            InlineKeyboardButton("🎯 3-Tier PYQ Quiz", callback_data="cmd_quiz"),
+        ],
+        [
+            InlineKeyboardButton("🧮 Formula Cards", callback_data="cmd_formulas_hub"),
+            InlineKeyboardButton("⚡ Speed Tricks", callback_data="cmd_tricks_hub"),
+        ],
+        [
+            InlineKeyboardButton("📊 My Scorecard", callback_data="cmd_stats"),
+            InlineKeyboardButton("❓ Quick Help", callback_data="cmd_help"),
         ]
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
     await update.message.reply_text(welcome, reply_markup=reply_markup, parse_mode="Markdown")
 
 
-# ---------------------------------------------------------------------------
-# /help command handler
-# ---------------------------------------------------------------------------
-
 async def cmd_help(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Respond to the /help command."""
+    """Respond to /help command."""
     help_text = (
-        "🎓 *ErManower JEE Bot — Quick Help*\n\n"
-        "• Type any Maths, Physics, or Chemistry question\n"
-        "• Or send a photo of a textbook problem\n\n"
-        "I'll analyze the concept, pull relevant NCERT formulas, and guide your next step!"
+        "🎓 *ErManower JEE Bot — Command Reference*\n\n"
+        "• `/quiz` ➔ Practice 10-Year High-Yield MCQs (Level 1, 2, 3)\n"
+        "• `/formula <topic>` ➔ Instant formula cheat sheet\n"
+        "• `/trick <topic>` ➔ Speed elimination shortcuts\n"
+        "• `/compare <topic1 vs topic2>` ➔ Concept comparison\n"
+        "• `/mistakes <topic>` ➔ Avoid negative marking traps\n"
+        "• `/stats` ➔ Your personal accuracy & streak\n"
+        "• `/menu` ➔ Interactive subject dashboard\n\n"
+        "💡 *Tip:* You can type questions naturally or send photos anytime!"
     )
     await update.message.reply_text(help_text, parse_mode="Markdown")
 
-
-# ---------------------------------------------------------------------------
-# Interactive Menu & Quiz Command Handlers
-# ---------------------------------------------------------------------------
 
 async def cmd_menu(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Display interactive command & subject selection menu."""
     keyboard = [
         [
-            InlineKeyboardButton("⚡ Physics", callback_data="subject_physics"),
-            InlineKeyboardButton("🧪 Chemistry", callback_data="subject_chemistry"),
-            InlineKeyboardButton("📚 Maths", callback_data="subject_maths"),
+            InlineKeyboardButton("⚡ Physics Hub", callback_data="subject_physics"),
+            InlineKeyboardButton("🧪 Chemistry Hub", callback_data="subject_chemistry"),
         ],
         [
-            InlineKeyboardButton("🎯 Practice Interactive Quiz", callback_data="cmd_quiz"),
+            InlineKeyboardButton("📚 Maths Hub", callback_data="subject_maths"),
+            InlineKeyboardButton("🧬 Biology Hub", callback_data="subject_biology"),
         ],
         [
-            InlineKeyboardButton("❓ Quick Help", callback_data="cmd_help"),
+            InlineKeyboardButton("🎯 Start 3-Tier PYQ Quiz", callback_data="cmd_quiz"),
+            InlineKeyboardButton("📊 Accuracy Scorecard", callback_data="cmd_stats"),
         ]
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
-    await update.message.reply_text(
-        "🎓 ErManower JEE & EAPCET Interactive Menu\n\n"
-        "Select a subject to explore high-yield topics or tap Practice Interactive Quiz to test your knowledge!",
-        reply_markup=reply_markup,
+    text = (
+        "🎓 *ErManower Interactive Hub*\n\n"
+        "Select a subject hub below to explore high-yield formulas, tricks, and 10-year PYQ trends!"
     )
+    if update.callback_query:
+        await update.callback_query.message.reply_text(text, reply_markup=reply_markup, parse_mode="Markdown")
+    elif update.message:
+        await update.message.reply_text(text, reply_markup=reply_markup, parse_mode="Markdown")
 
 
-from utils import parse_image, get_topic_diagram_url
+# ---------------------------------------------------------------------------
+# Dedicated Power AI Commands (/formula, /trick, /compare, /mistakes, /stats)
+# ---------------------------------------------------------------------------
 
-QUIZ_BANK = [
-    {
-        "id": "q1",
-        "title": "Physics (10-Year High-Yield PYQ - Laws of Motion)",
-        "diagram_url": "https://quickchart.io/chart?c=%7Btype%3A%27radar%27%2Cdata%3A%7Blabels%3A%5B%27F_x+(Horizontal)%27%2C%27F_y+(Vertical)%27%2C%27Normal+Force%27%2C%27Gravity+(m%C2%B7g)%27%5D%2Cdatasets%3A%5B%7Blabel%3A%27Free+Body+Diagram%27%2Cdata%3A%5B10%2C17.3%2C49%2C49%5D%2CbackgroundColor%3A%27rgba(54,162,235,0.2)%27%7D%5D%7D&title=Free+Body+Force+Vector+Diagram",
-        "question": "A 5 kg block moves on a smooth surface under a force F = 20 N at an angle 60° to the horizontal. What is the horizontal acceleration of the block?",
-        "options": {"A": "1.0 m/s²", "B": "2.0 m/s²", "C": "4.0 m/s²", "D": "0.5 m/s²"},
-        "correct": "B",
-        "explanation": "1. Key Concept: Horizontal component F cos θ accelerates the block.\n2. Formula: a = (F · cos 60°) / m\n3. Calculation: F cos 60° = 20 · 0.5 = 10 N -> a = 10 / 5 = 2.0 m/s²."
-    },
-    {
-        "id": "q2",
-        "title": "Chemistry (10-Year High-Yield PYQ - Coordination Compounds)",
-        "diagram_url": "https://quickchart.io/chart?c=%7Btype%3A%27bar%27%2Cdata%3A%7Blabels%3A%5B%27d1%27%2C%27d2%27%2C%27d3%27%2C%27d4%27%2C%27d5%27%2C%27d6%27%5D%2Cdatasets%3A%5B%7Blabel%3A%273d+Electron+Spin+State%27%2Cdata%3A%5B1%2C1%2C1%2C1%2C1%2C1%5D%2CbackgroundColor%3A%27purple%27%7D%5D%7D&title=Octahedral+High+Spin+State+(Fe2%2B)",
-        "question": "What is the spin-only magnetic moment of [Fe(H2O)6]2+ ion? (Fe Z=26)",
-        "options": {"A": "2.83 BM", "B": "4.90 BM", "C": "5.92 BM", "D": "0.00 BM"},
-        "correct": "B",
-        "explanation": "1. Key Concept: H2O is a weak ligand, so Fe2+ (3d6) has 4 unpaired electrons.\n2. Formula: μ = √(n(n + 2))\n3. Calculation: μ = √(4(6)) = √24 ≈ 4.90 BM."
-    },
-    {
-        "id": "q3",
-        "title": "Maths (10-Year High-Yield PYQ - Vectors & 3D)",
-        "diagram_url": "https://quickchart.io/chart?c=%7Btype%3A%27line%27%2Cdata%3A%7Blabels%3A%5B%27X%27%2C%27Y%27%2C%27Z%27%5D%2Cdatasets%3A%5B%7Blabel%3A%27Vector+A%27%2Cdata%3A%5B2%2C1%2C-1%5D%2CborderColor%3A%27green%27%7D%2C%7Blabel%3A%27Vector+B%27%2Cdata%3A%5B1%2C-1%2C1%5D%2CborderColor%3A%27purple%27%7D%5D%7D&title=3D+Vector+Component+Diagram",
-        "question": "If vector a = 2i + j - k and b = i - j + k, what is the dot product a · b?",
-        "options": {"A": "0", "B": "2", "C": "-1", "D": "4"},
-        "correct": "A",
-        "explanation": "1. Key Concept: a · b = ax·bx + ay·by + az·bz.\n2. Calculation: (2)(1) + (1)(-1) + (-1)(1) = 2 - 1 - 1 = 0.\n3. Result: Since a · b = 0, the two vectors are perpendicular!"
-    }
-]
+async def cmd_formula(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Generate formula card for specified topic."""
+    topic = " ".join(context.args) if context.args else "Thermodynamics and Optics"
+    await update.message.chat.send_action("typing")
+    query = f"Generate a compact formula card for: {topic}"
+    response = await _run_sync(run_crew, query)
+    await _send_long_message(update, response)
 
+
+async def cmd_trick(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Generate 10-second speed shortcut for specified topic."""
+    topic = " ".join(context.args) if context.args else "Projectile Motion and Collisions"
+    await update.message.chat.send_action("typing")
+    query = f"Teach 10-second speed tricks and option elimination for: {topic}"
+    response = await _run_sync(run_crew, query)
+    await _send_long_message(update, response)
+
+
+async def cmd_compare(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Generate comparative breakdown between two concepts."""
+    topic = " ".join(context.args) if context.args else "Isothermal vs Adiabatic processes"
+    await update.message.chat.send_action("typing")
+    query = f"Compare and distinguish: {topic}"
+    response = await _run_sync(run_crew, query)
+    await _send_long_message(update, response)
+
+
+async def cmd_mistakes(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Generate top negative marking traps for specified topic."""
+    topic = " ".join(context.args) if context.args else "Ray Optics and Electrostatics"
+    await update.message.chat.send_action("typing")
+    query = f"What are the top negative marking mistakes and traps in: {topic}"
+    response = await _run_sync(run_crew, query)
+    await _send_long_message(update, response)
+
+
+async def cmd_stats(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Display student's quiz scorecard, streak, and target rank estimation."""
+    stats = context.user_data.get("stats", {"attempted": 0, "correct": 0, "streak": 0, "best_streak": 0})
+    attempted = stats["attempted"]
+    correct = stats["correct"]
+    streak = stats["streak"]
+    best = stats["best_streak"]
+    accuracy = (correct / attempted * 100) if attempted > 0 else 0
+
+    if accuracy >= 80 and attempted >= 3:
+        rank_est = "🔥 Rank < 5,000 in JEE Main / Top 500 in TG EAPCET!"
+    elif accuracy >= 60 and attempted >= 3:
+        rank_est = "⚡ Rank ~ 15,000 - 25,000 in JEE Main (Strong Foundation)"
+    else:
+        rank_est = "🌱 Building Fundamentals — Keep practicing daily PYQs!"
+
+    scorecard = (
+        "📊 *Your ErManower Performance Scorecard*\n\n"
+        f"• **Total PYQs Attempted:** `{attempted}`\n"
+        f"• **Correct Solutions:** `{correct}`\n"
+        f"• **Accuracy Rate:** `{accuracy:.1f}%`\n"
+        f"• **Current Streak:** `{streak} in a row 🔥`\n"
+        f"• **Best Streak:** `{best} in a row 🏆`\n\n"
+        f"🎯 *Estimated Trajectory:*\n_{rank_est}_\n\n"
+        "Tap `/quiz` to practice another 10-year challenge!"
+    )
+    if update.callback_query:
+        await update.callback_query.message.reply_text(scorecard, parse_mode="Markdown")
+    elif update.message:
+        await update.message.reply_text(scorecard, parse_mode="Markdown")
+
+
+# ---------------------------------------------------------------------------
+# Interactive 3-Tier Quiz Engine Handler
+# ---------------------------------------------------------------------------
 
 async def cmd_quiz(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Generate a 10-year high-yield PYQ practice challenge with visual diagram."""
-    import random
+    """Generate a 3-tier adaptive PYQ practice challenge with Hint and Diagram."""
     quiz_item = random.choice(QUIZ_BANK)
     q_id = quiz_item["id"]
 
+    # Send visual diagram photo if available
     if "diagram_url" in quiz_item:
         try:
-            await update.message.reply_photo(
+            target = update.callback_query.message if update.callback_query else update.message
+            await target.reply_photo(
                 photo=quiz_item["diagram_url"],
-                caption=f"🖼️ *Visual Diagram for {quiz_item['id'].upper()}*",
+                caption=f"🖼️ *Visual Diagram | {quiz_item['title']}*",
                 parse_mode="Markdown"
             )
         except Exception as err:
             logger.warning("Quiz photo send error: %s", err)
 
     quiz_text = (
-        f"🎯 {quiz_item['title']}\n\n"
-        f"Question: {quiz_item['question']}\n\n"
+        f"🎯 *{quiz_item['level']}*\n"
+        f"📚 *{quiz_item['title']}*\n\n"
+        f"**Question:** {quiz_item['question']}\n\n"
         f"A) {quiz_item['options']['A']}\n"
         f"B) {quiz_item['options']['B']}\n"
         f"C) {quiz_item['options']['C']}\n"
@@ -250,15 +409,23 @@ async def cmd_quiz(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         [
             InlineKeyboardButton(f"C) {quiz_item['options']['C']}", callback_data=f"qans_{q_id}_C"),
             InlineKeyboardButton(f"D) {quiz_item['options']['D']}", callback_data=f"qans_{q_id}_D"),
+        ],
+        [
+            InlineKeyboardButton("💡 Show Hint", callback_data=f"qhint_{q_id}"),
+            InlineKeyboardButton("🔄 Next Question", callback_data="cmd_quiz"),
         ]
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
 
     if update.callback_query:
-        await update.callback_query.message.reply_text(quiz_text, reply_markup=reply_markup)
+        await update.callback_query.message.reply_text(quiz_text, reply_markup=reply_markup, parse_mode="Markdown")
     elif update.message:
-        await update.message.reply_text(quiz_text, reply_markup=reply_markup)
+        await update.message.reply_text(quiz_text, reply_markup=reply_markup, parse_mode="Markdown")
 
+
+# ---------------------------------------------------------------------------
+# Callback Query Handler (Button Clicks)
+# ---------------------------------------------------------------------------
 
 async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Process clicks on inline keyboard buttons."""
@@ -269,8 +436,21 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
     if data.startswith("subject_"):
         sub = data.split("_")[1].capitalize()
         await query.message.reply_text(
-            f"📚 You selected {sub}!\n\n"
-            f"Send any query in {sub} (e.g., 'top 5 {sub.lower()} 10-year PYQs' or 'explain key formula') to get Socratic tutoring!"
+            f"📚 *{sub} Hub Active!*\n\n"
+            f"Try asking:\n"
+            f"• `/formula {sub}` ➔ Formula card\n"
+            f"• `/trick {sub}` ➔ Speed solving tricks\n"
+            f"• `top 5 {sub.lower()} 10-year pyqs` ➔ High-yield questions\n"
+            f"• `/quiz` ➔ Test your knowledge!",
+            parse_mode="Markdown"
+        )
+    elif data.startswith("qhint_"):
+        q_id = data.split("_")[1]
+        item = next((q for q in QUIZ_BANK if q["id"] == q_id), QUIZ_BANK[0])
+        await query.message.reply_text(
+            f"💡 *Tactical Hint for {item['title']}:*\n\n_{item['hint']}_\n\n"
+            "Now pick your answer above! 🎯",
+            parse_mode="Markdown"
         )
     elif data.startswith("qans_"):
         parts = data.split("_")
@@ -278,16 +458,42 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         chosen = parts[2]
 
         item = next((q for q in QUIZ_BANK if q["id"] == q_id), QUIZ_BANK[0])
-        if chosen == item["correct"]:
-            feedback = f"✅ Correct! Excellent 10-Year PYQ reasoning!\n\n{item['explanation']}"
-        else:
-            feedback = f"❌ Option {chosen} is incorrect.\n\nSocratic Hint: Re-check the governing formula.\n\n{item['explanation']}"
+        stats = context.user_data.setdefault("stats", {"attempted": 0, "correct": 0, "streak": 0, "best_streak": 0})
+        stats["attempted"] += 1
 
-        await query.message.reply_text(feedback)
+        if chosen == item["correct"]:
+            stats["correct"] += 1
+            stats["streak"] += 1
+            if stats["streak"] > stats["best_streak"]:
+                stats["best_streak"] = stats["streak"]
+            feedback = (
+                f"✅ *Correct! Outstanding 10-Year PYQ reasoning!* 🔥\n\n"
+                f"{item['explanation']}\n\n"
+                f"🏆 *Current Streak:* `{stats['streak']} in a row`"
+            )
+        else:
+            stats["streak"] = 0
+            feedback = (
+                f"❌ *Option {chosen} is incorrect.* (Correct: **{item['correct']}**)\n\n"
+                f"💡 *Socratic Derivation & Analysis:*\n\n"
+                f"{item['explanation']}"
+            )
+
+        next_kb = InlineKeyboardMarkup([[InlineKeyboardButton("🎯 Next Practice Challenge", callback_data="cmd_quiz")]])
+        await query.message.reply_text(feedback, reply_markup=next_kb, parse_mode="Markdown")
+
     elif data == "cmd_quiz":
         await cmd_quiz(update, context)
+    elif data == "cmd_menu":
+        await cmd_menu(update, context)
+    elif data == "cmd_stats":
+        await cmd_stats(update, context)
     elif data == "cmd_help":
         await cmd_help(update, context)
+    elif data == "cmd_formulas_hub":
+        await query.message.reply_text("🧮 Send `/formula <topic>` (e.g. `/formula optics` or `/formula calculus`) to get an instant formula card!")
+    elif data == "cmd_tricks_hub":
+        await query.message.reply_text("⚡ Send `/trick <topic>` (e.g. `/trick kinematics` or `/trick organic`) to learn 10-second exam shortcuts!")
 
 
 # ---------------------------------------------------------------------------
@@ -303,12 +509,12 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
     user = update.effective_user
     logger.info("Text query from %s (id=%d): %s", user.first_name, user.id, user_text[:100])
 
-    # Handle short greetings cleanly without full RAG pipeline
+    # Handle short greetings cleanly
     if user_text.lower() in {"hi", "hello", "hey", "hlo", "namaste"}:
-        context.user_data.clear()
+        context.user_data.pop("last_turn", None)
         await update.message.reply_text(
-            "👋 Hello! I'm ErManower, your JEE & EAPCET Socratic Tutor.\n\n"
-            "Ask me any question in Maths, Physics, or Chemistry to get started! 📚",
+            "👋 Hello! I'm ErManower, your AI JEE, EAPCET & NEET Socratic Tutor.\n\n"
+            "Ask any question, send `/formula <topic>`, `/quiz`, or upload a photo to start! 📚",
         )
         return
 
@@ -327,7 +533,7 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
         except Exception as err:
             logger.warning("Diagram photo send error: %s", err)
 
-    # Maintain conversational context for follow-up inputs (e.g. "1", "2", "option A", "v = u+at")
+    # Maintain conversational context for follow-ups
     last_turn = context.user_data.get("last_turn", "")
     if last_turn and len(user_text) < 100:
         query_for_engine = f"Previous Conversation Context:\n{last_turn}\n\nStudent Follow-up / Answer:\n{user_text}"
@@ -344,10 +550,10 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
             "Please try again or rephrase your query."
         )
 
-    # Save short memory of this turn for continuous discussion
+    # Save short memory of this turn
     context.user_data["last_turn"] = f"Student: {user_text}\nTutor: {response[:350]}"
 
-    # Step 4: Send response (split if > 4096 chars)
+    # Send response (split if > 4000 chars)
     await _send_long_message(update, response)
 
 
@@ -363,18 +569,16 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
 
     await update.message.chat.send_action("typing")
 
-    # Step 1: Download the highest-resolution photo from Telegram CDN
-    photo = update.message.photo[-1]  # Highest resolution variant
+    # Download highest-res photo
+    photo = update.message.photo[-1]
     file = await context.bot.get_file(photo.file_id)
     image_bytes = await file.download_as_bytearray()
     image_bytes = bytes(image_bytes)
 
     logger.info("Downloaded photo: file_id=%s, size=%d bytes", photo.file_id, len(image_bytes))
-
-    # Determine MIME type (Telegram compresses to JPEG)
     mime_type = "image/jpeg"
 
-    # Step 2: Parse image with Gemini Vision
+    # Parse image with Gemini Vision
     try:
         vision_result = await _run_sync(parse_image, image_bytes, mime_type)
     except Exception as exc:
@@ -385,18 +589,10 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         )
         return
 
-    logger.info(
-        "Vision extraction complete — subject=%s, exam=%s, equations=%d, diagrams=%d",
-        vision_result.detected_subject,
-        vision_result.detected_exam,
-        len(vision_result.equations_latex),
-        len(vision_result.diagrams),
-    )
-
-    # Step 3: Build crew input from vision result
+    # Build crew input from vision result
     crew_input = _format_vision_for_crew(vision_result, original_caption=caption)
 
-    # Step 4: Run CrewAI pipeline in thread pool
+    # Run Socratic AI in thread pool
     await update.message.chat.send_action("typing")
     try:
         response = await _run_sync(run_crew, crew_input)
@@ -407,30 +603,27 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
             "Please try again or type your question as text."
         )
 
-    # Step 5: Send response
     await _send_long_message(update, response)
 
 
 # ---------------------------------------------------------------------------
-# Helper: send long messages (Telegram 4096-char limit)
+# Helper: send long messages
 # ---------------------------------------------------------------------------
 
 async def _send_long_message(update: Update, text: str) -> None:
     """Split and send a response that may exceed Telegram's message length limit."""
-    max_len = 4000  # Leave margin for safety
+    max_len = 4000
 
     if len(text) <= max_len:
         await update.message.reply_text(text)
         return
 
-    # Split on paragraph boundaries where possible
     chunks: list[str] = []
     while text:
         if len(text) <= max_len:
             chunks.append(text)
             break
 
-        # Try to split at a double newline near the limit
         split_pos = text.rfind("\n\n", 0, max_len)
         if split_pos == -1:
             split_pos = text.rfind("\n", 0, max_len)
@@ -442,12 +635,12 @@ async def _send_long_message(update: Update, text: str) -> None:
 
     for i, chunk in enumerate(chunks):
         if i > 0:
-            await asyncio.sleep(0.3)  # Rate limit courtesy
+            await asyncio.sleep(0.3)
         await update.message.reply_text(chunk)
 
 
 # ---------------------------------------------------------------------------
-# Document / sticker / other handler (graceful rejection)
+# Document / sticker / other handler
 # ---------------------------------------------------------------------------
 
 async def handle_unsupported(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -490,7 +683,7 @@ def main() -> None:
     except Exception as exc:
         logger.warning("Event loop setup in thread: %s", exc)
 
-    logger.info("Starting ErManower JEE Bot...")
+    logger.info("Starting ErManower JEE Bot (Advanced AI Edition)...")
 
     app = (
         Application.builder()
@@ -501,11 +694,17 @@ def main() -> None:
         .build()
     )
 
-    # Register handlers (order matters — first match wins)
+    # Register handlers
     app.add_handler(CommandHandler("start", cmd_start))
     app.add_handler(CommandHandler("help", cmd_help))
     app.add_handler(CommandHandler("menu", cmd_menu))
     app.add_handler(CommandHandler("quiz", cmd_quiz))
+    app.add_handler(CommandHandler("formula", cmd_formula))
+    app.add_handler(CommandHandler("trick", cmd_trick))
+    app.add_handler(CommandHandler("compare", cmd_compare))
+    app.add_handler(CommandHandler("mistakes", cmd_mistakes))
+    app.add_handler(CommandHandler("stats", cmd_stats))
+
     app.add_handler(CallbackQueryHandler(handle_callback))
     app.add_handler(MessageHandler(filters.PHOTO, handle_photo))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_text))
@@ -514,7 +713,6 @@ def main() -> None:
         handle_unsupported,
     ))
 
-    # Global error handler
     app.add_error_handler(error_handler)
 
     logger.info("ErManower JEE Bot is polling for updates...")
@@ -527,4 +725,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-

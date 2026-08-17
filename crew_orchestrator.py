@@ -1,8 +1,9 @@
 """
-ErManower JEE Bot — Socratic Tutor Engine
-==========================================
+ErManower JEE Bot — Advanced Socratic Tutor Engine
+===================================================
 Ultra-low-latency Socratic Tutor using Groq's llama-3.3-70b-versatile model
-with local NCERT/JEE RAG context retrieval and intelligent multi-mode routing.
+with local NCERT/JEE RAG context retrieval, adaptive multi-mode routing,
+Formula Cards, Speed Tricks, Comparative Tables, and Negative Marking Traps.
 """
 
 from __future__ import annotations
@@ -36,9 +37,9 @@ def run_crew(student_input: str) -> str:
 
 def run_fast_tutor(student_input: str) -> str:
     """
-    Ultra-low-latency Socratic Tutor engine (~0.8s response time).
-    Direct single-pass execution combining local NCERT/JEE RAG context retrieval
-    with Groq's llama-3.3-70b-versatile model and dynamic intent handling.
+    Ultra-low-latency Advanced Socratic Tutor engine (~0.8s response time).
+    Combines local NCERT/JEE RAG retrieval with Groq's llama-3.3-70b-versatile model
+    and specialized pedagogical modes.
     """
     logger.info("Executing Fast Socratic Tutor for input: %s", student_input[:100])
 
@@ -64,6 +65,10 @@ def run_fast_tutor(student_input: str) -> str:
     text_clean = student_input.strip().lower()
 
     # Dynamic Intent Classification
+    is_formula_card = bool(re.search(r'\b(formula|formulas|cheat\s*sheet|formula\s*card|key\s*equations?)\b', text_lower))
+    is_trick_request = bool(re.search(r'\b(trick|tricks|shortcut|shortcuts|solve\s*fast|speed\s*trick|option\s*elimination|fast\s*method)\b', text_lower))
+    is_compare_request = bool(re.search(r'\b(compare|difference\s*between|vs\b|versus|distinguish\s*between)\b', text_lower))
+    is_mistakes_request = bool(re.search(r'\b(mistake|mistakes|common\s*errors?|traps?|pitfalls?|negative\s*marking|blunders?)\b', text_lower))
     is_mindmap_request = bool(re.search(r'\b(mind\s*map|mindmap|diagram|flowchart|chart|graph|draw|sketch|map)\b', text_lower))
     is_list_request = bool(re.search(r'\b(top\s*\d+|list|\d+\s*questions|\d+\s*pyqs|important\s*questions|practice\s*questions|question\s*bank|top\s*neet|top\s*jee)\b', text_lower))
     is_proof_request = bool(re.search(r'\b(proof|prove|derive|derivation|step\s*by\s*step\s*derivation|proof\s*of)\b', text_lower))
@@ -76,7 +81,71 @@ def run_fast_tutor(student_input: str) -> str:
 
     max_tokens = 500
 
-    if is_mindmap_request:
+    if is_formula_card:
+        max_tokens = 600
+        system_prompt = (
+            "You are ErManower — elite IIT-JEE, TG EAPCET, and NEET formula architect.\n"
+            "The student wants an instant COMPACT FORMULA CARD / CHEAT SHEET.\n\n"
+            "STRICT RULES:\n"
+            "1. Output a structured ASCII box formula card using clean box characters (┌, ─, ┐, │, └, ┘).\n"
+            "2. Include:\n"
+            "   • [ Core Formula(s) ] ──▶ Main mathematical equations in clean plain text\n"
+            "   • [ Variable Units & Dimensions ] ──▶ SI units and dimensions of all symbols\n"
+            "   • [ Limiting Cases / Edge Conditions ] ──▶ When formula applies or breaks (e.g. v << c, theta = 0)\n"
+            "   • [ 10-Year Exam High-Yield Tip ] ──▶ Direct weightage / exam substitution pattern\n"
+            "3. End with a quick 1-line active calculation challenge.\n"
+            "4. NO ASTERISKS (*) or DOLLAR SIGNS ($)."
+        )
+        context_str = ""
+
+    elif is_trick_request:
+        max_tokens = 600
+        system_prompt = (
+            "You are ErManower — Master of Competitive Exam Shortcuts for IIT-JEE & TG EAPCET.\n"
+            "The student wants 10-SECOND SPEED TRICKS and OPTION ELIMINATION TECHNIQUES.\n\n"
+            "STRICT RULES:\n"
+            "1. Structure your response in 4 high-speed points:\n"
+            "   • Point 1: The 10-Second Shortcut Formula / Elimination Rule\n"
+            "   • Point 2: Standard Long Method vs Speed Trick (Comparison of time saved: 3 min vs 15 sec)\n"
+            "   • Point 3: Dimensional Analysis / Boundary Value Check (e.g. testing limits m1=m2 or theta=0)\n"
+            "   • Point 4: Socratic challenge question asking the student to apply this trick right now\n"
+            "2. NO ASTERISKS (*) or DOLLAR SIGNS ($). Write formulas in clean plain text."
+        )
+        context_str = ""
+
+    elif is_compare_request:
+        max_tokens = 650
+        system_prompt = (
+            "You are ErManower — Senior IIT-JEE & NEET Professor.\n"
+            "The student is asking to compare or distinguish two related concepts (e.g., SN1 vs SN2, Isothermal vs Adiabatic).\n\n"
+            "STRICT RULES:\n"
+            "1. Output a structured comparative breakdown with clear side-by-side comparison points:\n"
+            "   • Definition & Physical / Chemical Meaning\n"
+            "   • Governing Mathematical Equations / Reaction Conditions\n"
+            "   • Key Differences Summary (Tabular/Structured)\n"
+            "   • The #1 High-Yield 10-Year Exam Confusion / Trap\n"
+            "2. End with a Socratic question testing which condition applies in an actual exam scenario.\n"
+            "3. NO ASTERISKS (*) or DOLLAR SIGNS ($)."
+        )
+        context_str = ""
+
+    elif is_mistakes_request:
+        max_tokens = 600
+        system_prompt = (
+            "You are ErManower — Negative Marking Specialist for IIT-JEE & NEET.\n"
+            "The student wants to know COMMON EXAM MISTAKES, TRAPS, and BLUNDERS.\n\n"
+            "STRICT RULES:\n"
+            "1. List the Top 3 to 4 most dangerous negative-marking traps for this specific chapter/topic.\n"
+            "2. For each trap:\n"
+            "   • The Misconception (What 70% of students do wrong)\n"
+            "   • The Correct Scientific Reality (With formula/rule in plain text)\n"
+            "   • How Examiners Trap You (Tricky phrasing in JEE/NEET PYQs)\n"
+            "3. End with a quick Socratic check to test if they can spot the trap.\n"
+            "4. NO ASTERISKS (*) or DOLLAR SIGNS ($)."
+        )
+        context_str = ""
+
+    elif is_mindmap_request:
         max_tokens = 600
         system_prompt = (
             "You are ErManower — an elite IIT-JEE, TG EAPCET, and NEET mentor.\n"
@@ -166,15 +235,35 @@ def run_fast_tutor(student_input: str) -> str:
 
     user_content = f"Student Query:\n{student_input}{context_str}"
 
-    response = client.chat.completions.create(
-        model="llama-3.3-70b-versatile",
-        messages=[
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": user_content},
-        ],
-        temperature=0.3,
-        max_tokens=max_tokens,
-    )
+    models_to_try = [
+        "openai/gpt-oss-120b",
+        "openai/gpt-oss-20b",
+        "qwen/qwen3.6-27b",
+        "llama-3.3-70b-versatile",
+        "groq/compound"
+    ]
+
+    response = None
+    last_err = None
+    for model_name in models_to_try:
+        try:
+            response = client.chat.completions.create(
+                model=model_name,
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": user_content},
+                ],
+                temperature=0.3,
+                max_tokens=max_tokens,
+            )
+            logger.info("Successfully generated response using model: %s", model_name)
+            break
+        except Exception as err:
+            logger.warning("Model %s failed: %s. Trying next model...", model_name, err)
+            last_err = err
+
+    if response is None:
+        raise RuntimeError(f"All Groq models failed: {last_err}")
 
     final_output = response.choices[0].message.content.strip()
     final_output = final_output.replace("*", "").replace("$", "")
