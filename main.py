@@ -36,7 +36,7 @@ from telegram.ext import (
 )
 
 from crew_orchestrator import run_crew
-from utils import VisionExtractionResult, parse_image, parse_text_query, get_topic_diagram_url
+from utils import VisionExtractionResult, parse_image, parse_text_query, get_topic_diagram_url, get_topic_diagram_info
 
 # ---------------------------------------------------------------------------
 # Logging configuration
@@ -521,13 +521,14 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
     # Send typing indicator
     await update.message.chat.send_action("typing")
 
-    # Send visual diagram photo if query relates to visual concepts
-    diag_url = get_topic_diagram_url(user_text)
-    if diag_url:
+    # Send visual diagram photo with rich topic caption if query relates to visual concepts
+    diag_info = get_topic_diagram_info(user_text)
+    if diag_info:
+        photo_url, photo_caption = diag_info
         try:
             await update.message.reply_photo(
-                photo=diag_url,
-                caption="🖼️ *Visual Concept Diagram Guide*",
+                photo=photo_url,
+                caption=photo_caption,
                 parse_mode="Markdown"
             )
         except Exception as err:

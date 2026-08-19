@@ -255,25 +255,275 @@ def parse_image(image_bytes: bytes, mime_type: str = "image/jpeg") -> VisionExtr
 
 
 # ---------------------------------------------------------------------------
-# Visual Diagram Helper for Questions & Socratic Answers
+# Comprehensive Visual Diagram & Concept Map Engine
 # ---------------------------------------------------------------------------
 
-def get_topic_diagram_url(query: str) -> Optional[str]:
+import urllib.parse
+
+def _make_quickchart_url(chart_dict: dict) -> str:
+    """Serialize and URL-encode chart configuration for QuickChart.io."""
+    json_str = json.dumps(chart_dict, separators=(",", ":"))
+    return f"https://quickchart.io/chart?c={urllib.parse.quote(json_str)}&w=500&h=300&bkg=white"
+
+
+def get_topic_diagram_info(query: str) -> Optional[tuple[str, str]]:
     """
-    Return a clean, high-resolution visual diagram image URL if the query or question
-    relates to visual concepts (Ray Optics, Circuits, Thermo P-V, Free Body Diagrams, Vectors).
+    Return (diagram_url, caption) for concepts across Physics, Chemistry, Maths, and Biology.
     """
     if not query:
         return None
+
     q = query.lower()
-    if any(w in q for w in ["optics", "lens", "refraction", "mirror", "ray", "prism"]):
-        return "https://quickchart.io/chart?c=%7Btype%3A%27line%27%2Cdata%3A%7Blabels%3A%5B%27-2f%27%2C%27-f%27%2C%270%27%2C%27f%27%2C%272f%27%5D%2Cdatasets%3A%5B%7Blabel%3A%27Incident+Ray%27%2Cdata%3A%5B10%2C5%2C0%2C-5%2C-10%5D%2CborderColor%3A%27blue%27%7D%2C%7Blabel%3A%27Principal+Axis%27%2Cdata%3A%5B0%2C0%2C0%2C0%2C0%5D%2CborderColor%3A%27gray%27%7D%5D%7D%7D&title=Ray+Optics+Refraction+Diagram"
-    elif any(w in q for w in ["circuit", "kirchhoff", "ohm", "resistor", "wheatstone", "current"]):
-        return "https://quickchart.io/chart?c=%7Btype%3A%27bar%27%2Cdata%3A%7Blabels%3A%5B%27Loop+1%27%2C%27Loop+2%27%2C%27Branch+I3%27%5D%2Cdatasets%3A%5B%7Blabel%3A%27Current+Distribution+(A)%27%2Cdata%3A%5B2%2C1.5%2C3.5%5D%2CbackgroundColor%3A%27orange%27%7D%5D%7D&title=Kirchhoff+Circuit+Current+Distribution"
+
+    # 1. MATHS: Trigonometry & Waves
+    if any(w in q for w in ["trigonometry", "trigo", "sin", "cos", "tan", "unit circle"]):
+        chart = {
+            "type": "line",
+            "data": {
+                "labels": ["0°", "30°", "45°", "60°", "90°", "180°", "270°", "360°"],
+                "datasets": [
+                    {"label": "sin(θ)", "data": [0, 0.5, 0.707, 0.866, 1.0, 0, -1.0, 0], "borderColor": "#2563eb", "fill": False},
+                    {"label": "cos(θ)", "data": [1.0, 0.866, 0.707, 0.5, 0, -1.0, 0, 1.0], "borderColor": "#dc2626", "fill": False}
+                ]
+            },
+            "options": {"title": {"display": True, "text": "Trigonometric Unit Wave: sin(θ) vs cos(θ)"}}
+        }
+        return _make_quickchart_url(chart), "📐 *Visual Concept Map: Trigonometric Functions & Unit Circle*"
+
+    # 2. MATHS: Calculus & Parabolas
+    elif any(w in q for w in ["calculus", "parabola", "derivative", "integral", "maxima", "minima", "quadratic"]):
+        chart = {
+            "type": "line",
+            "data": {
+                "labels": ["-3", "-2", "-1", "0", "1", "2", "3"],
+                "datasets": [
+                    {"label": "y = x² (Parabola)", "data": [9, 4, 1, 0, 1, 4, 9], "borderColor": "#9333ea", "fill": True, "backgroundColor": "rgba(147,51,234,0.1)"},
+                    {"label": "dy/dx = 2x (Tangent Slope)", "data": [-6, -4, -2, 0, 2, 4, 6], "borderColor": "#16a34a", "fill": False}
+                ]
+            },
+            "options": {"title": {"display": True, "text": "Parabolic Curve & Tangent Derivative Profile"}}
+        }
+        return _make_quickchart_url(chart), "📈 *Visual Calculus Map: Curve Trajectory & Derivative Tangent*"
+
+    # 3. PHYSICS: Projectile Motion
+    elif any(w in q for w in ["projectile", "trajectory", "range", "flight time", "projectile motion"]):
+        chart = {
+            "type": "line",
+            "data": {
+                "labels": ["0m", "10m", "20m", "30m", "40m (R/2)", "50m", "60m", "70m", "80m (Range)"],
+                "datasets": [
+                    {"label": "Parabolic Path (y vs x)", "data": [0, 7.5, 12, 14.5, 15, 14.5, 12, 7.5, 0], "borderColor": "#2563eb", "fill": True, "backgroundColor": "rgba(37,99,235,0.15)"}
+                ]
+            },
+            "options": {"title": {"display": True, "text": "Projectile Flight Trajectory: Max Height H & Range R"}}
+        }
+        return _make_quickchart_url(chart), "🚀 *Visual Physics Map: Projectile Parabolic Trajectory*"
+
+    # 4. PHYSICS: Rotational Dynamics & Moment of Inertia
+    elif any(w in q for w in ["rotation", "moment of inertia", "rolling", "angular momentum", "torque"]):
+        chart = {
+            "type": "bar",
+            "data": {
+                "labels": ["Ring (1.0)", "Hollow Cyl (1.0)", "Solid Disc (0.5)", "Hollow Sphere (0.67)", "Solid Sphere (0.4)"],
+                "datasets": [
+                    {"label": "Moment of Inertia Ratio (I / mR²)", "data": [1.0, 1.0, 0.5, 0.67, 0.4], "backgroundColor": ["#ef4444", "#f97316", "#3b82f6", "#eab308", "#10b981"]}
+                ]
+            },
+            "options": {"title": {"display": True, "text": "Moment of Inertia Ratios for Rolling Acceleration"}}
+        }
+        return _make_quickchart_url(chart), "🔄 *Visual Rotational Dynamics Map: Moment of Inertia Comparison*"
+
+    # 5. PHYSICS: Simple Harmonic Motion (SHM) Energy
+    elif any(w in q for w in ["shm", "harmonic", "pendulum", "oscillation", "spring"]):
+        chart = {
+            "type": "line",
+            "data": {
+                "labels": ["-A", "-A/2", "0 (Mean)", "+A/2", "+A"],
+                "datasets": [
+                    {"label": "Potential Energy U = ½kx²", "data": [10, 2.5, 0, 2.5, 10], "borderColor": "#ef4444", "fill": False},
+                    {"label": "Kinetic Energy K = ½m(v²)", "data": [0, 7.5, 10, 7.5, 0], "borderColor": "#3b82f6", "fill": False},
+                    {"label": "Total Mechanical Energy E", "data": [10, 10, 10, 10, 10], "borderColor": "#10b981", "borderDash": [5, 5], "fill": False}
+                ]
+            },
+            "options": {"title": {"display": True, "text": "SHM Energy Conservation: Kinetic vs Potential vs Total"}}
+        }
+        return _make_quickchart_url(chart), "⚡ *Visual Physics Map: SHM Energy Conservation Curve*"
+
+    # 6. PHYSICS: Modern Physics - Photoelectric Effect
+    elif any(w in q for w in ["photoelectric", "work function", "stopping potential", "photon", "de broglie"]):
+        chart = {
+            "type": "line",
+            "data": {
+                "labels": ["0", "ν0 (Threshold)", "1.5 ν0", "2.0 ν0", "2.5 ν0", "3.0 ν0"],
+                "datasets": [
+                    {"label": "Stopping Potential V0 (Volts)", "data": [0, 0, 1.0, 2.0, 3.0, 4.0], "borderColor": "#f59e0b", "fill": False}
+                ]
+            },
+            "options": {"title": {"display": True, "text": "Einstein Photoelectric Curve: Stopping Potential vs Frequency (Slope = h/e)"}}
+        }
+        return _make_quickchart_url(chart), "🔬 *Visual Modern Physics Map: Photoelectric Effect & Work Function*"
+
+    # 7. PHYSICS: Thermodynamics - P-V Carnot Cycle
     elif any(w in q for w in ["thermo", "pv", "carnot", "entropy", "adiabatic", "isothermal"]):
-        return "https://quickchart.io/chart?c=%7Btype%3A%27line%27%2Cdata%3A%7Blabels%3A%5B%27V1%27%2C%27V2%27%2C%27V3%27%2C%27V4%27%5D%2Cdatasets%3A%5B%7Blabel%3A%27P-V+Cycle%27%2Cdata%3A%5B100%2C50%2C20%2C70%5D%2CborderColor%3A%27red%27%7D%5D%7D&title=P-V+Thermodynamic+Cycle+Diagram"
-    elif any(w in q for w in ["force", "motion", "block", "free body", "fbd", "friction", "momentum", "law of motion"]):
-        return "https://quickchart.io/chart?c=%7Btype%3A%27radar%27%2Cdata%3A%7Blabels%3A%5B%27F_x+(Horizontal)%27%2C%27F_y+(Vertical)%27%2C%27Normal+Force%27%2C%27Gravity+(m%C2%B7g)%27%5D%2Cdatasets%3A%5B%7Blabel%3A%27Free+Body+Diagram%27%2Cdata%3A%5B10%2C17.3%2C49%2C49%5D%2CbackgroundColor%3A%27rgba(54,162,235,0.2)%27%7D%5D%7D&title=Free+Body+Force+Vector+Diagram"
+        chart = {
+            "type": "line",
+            "data": {
+                "labels": ["V1 (P1,T_H)", "V2 (P2,T_H)", "V3 (P3,T_C)", "V4 (P4,T_C)", "V1"],
+                "datasets": [
+                    {"label": "Carnot Cycle (P vs V)", "data": [100, 50, 20, 40, 100], "borderColor": "#ef4444", "fill": True, "backgroundColor": "rgba(239,68,68,0.15)"}
+                ]
+            },
+            "options": {"title": {"display": True, "text": "P-V Thermodynamic Indicator Diagram: 4-Stage Carnot Cycle"}}
+        }
+        return _make_quickchart_url(chart), "🔥 *Visual Thermodynamics Map: P-V Indicator & Carnot Engine*"
+
+    # 8. PHYSICS: Optics & Lens Ray Tracing
+    elif any(w in q for w in ["optics", "lens", "refraction", "mirror", "ray", "prism", "snell"]):
+        chart = {
+            "type": "line",
+            "data": {
+                "labels": ["-2F", "-F", "0 (Lens)", "+F", "+2F"],
+                "datasets": [
+                    {"label": "Incident / Refracted Ray Path", "data": [10, 5, 0, -5, -10], "borderColor": "#2563eb", "fill": False},
+                    {"label": "Principal Axis", "data": [0, 0, 0, 0, 0], "borderColor": "#9ca3af", "borderDash": [4, 4], "fill": False}
+                ]
+            },
+            "options": {"title": {"display": True, "text": "Convex Lens Ray Tracing & Focal Plane Conformance"}}
+        }
+        return _make_quickchart_url(chart), "🔭 *Visual Optics Map: Ray Tracing & Lens Formula Geometry*"
+
+    # 9. PHYSICS: Circuits & Kirchhoff Laws
+    elif any(w in q for w in ["circuit", "kirchhoff", "ohm", "resistor", "wheatstone", "current", "potentiometer"]):
+        chart = {
+            "type": "bar",
+            "data": {
+                "labels": ["Branch I1 (Loop 1)", "Branch I2 (Loop 2)", "Combined I3 = I1 + I2"],
+                "datasets": [
+                    {"label": "Current Distribution (Amperes)", "data": [2.0, 1.5, 3.5], "backgroundColor": ["#3b82f6", "#10b981", "#f59e0b"]}
+                ]
+            },
+            "options": {"title": {"display": True, "text": "Kirchhoff Current Law (KCL) Junction Distribution"}}
+        }
+        return _make_quickchart_url(chart), "⚡ *Visual Circuit Map: Kirchhoff Loop & Branch Currents*"
+
+    # 10. PHYSICS: Free Body Diagram Forces
+    elif any(w in q for w in ["force", "motion", "block", "free body", "fbd", "friction", "newton"]):
+        chart = {
+            "type": "radar",
+            "data": {
+                "labels": ["F_applied (Horizontal)", "Normal Force (Up)", "Gravity m·g (Down)", "Friction f_k (Opposite)"],
+                "datasets": [
+                    {"label": "Force Vector Magnitude (N)", "data": [20, 49, 49, 10], "backgroundColor": "rgba(59,130,246,0.25)", "borderColor": "#2563eb"}
+                ]
+            },
+            "options": {"title": {"display": True, "text": "Free Body Force Vector Resolution Diagram"}}
+        }
+        return _make_quickchart_url(chart), "⚖️ *Visual Physics Map: Free Body Force Vector Diagram*"
+
+    # 11. CHEMISTRY: Coordination Chemistry & CFT Splitting
+    elif any(w in q for w in ["coordination", "crystal field", "cft", "t2g", "eg", "ligand", "octahedral"]):
+        chart = {
+            "type": "bar",
+            "data": {
+                "labels": ["Degenerate 3d", "t2g (Lower Energy -0.4 Δo)", "eg (Higher Energy +0.6 Δo)"],
+                "datasets": [
+                    {"label": "Orbital Energy Level in Octahedral Field", "data": [0, -4, 6], "backgroundColor": ["#9ca3af", "#3b82f6", "#ef4444"]}
+                ]
+            },
+            "options": {"title": {"display": True, "text": "Crystal Field Theory (CFT) Octahedral Splitting (Δo)"}}
+        }
+        return _make_quickchart_url(chart), "🧪 *Visual Chemistry Map: Crystal Field Orbital Splitting Diagram*"
+
+    # 12. CHEMISTRY: Chemical Kinetics & Activation Energy
+    elif any(w in q for w in ["kinetics", "activation energy", "arrhenius", "catalyst", "reaction rate"]):
+        chart = {
+            "type": "line",
+            "data": {
+                "labels": ["Reactants (A+B)", "Transition State (Uncatalyzed)", "Transition State (Catalyzed)", "Products (C+D)"],
+                "datasets": [
+                    {"label": "Potential Energy Profile (kJ/mol)", "data": [20, 85, 50, -10], "borderColor": "#ef4444", "fill": False}
+                ]
+            },
+            "options": {"title": {"display": True, "text": "Arrhenius Reaction Coordinate: Activation Energy Ea & Catalyst Lowering"}}
+        }
+        return _make_quickchart_url(chart), "⚗️ *Visual Chemistry Map: Activation Energy & Reaction Pathway*"
+
+    # 13. CHEMISTRY: Periodic Trends (Ionization Energy)
+    elif any(w in q for w in ["periodic", "ionization energy", "electronegativity", "atomic radius"]):
+        chart = {
+            "type": "line",
+            "data": {
+                "labels": ["Li", "Be (2s²)", "B (2p¹)", "C", "N (2p³ half-filled)", "O", "F", "Ne"],
+                "datasets": [
+                    {"label": "1st Ionization Enthalpy (kJ/mol)", "data": [520, 899, 801, 1086, 1402, 1314, 1681, 2081], "borderColor": "#8b5cf6", "fill": False}
+                ]
+            },
+            "options": {"title": {"display": True, "text": "Period 2 Ionization Enthalpy Anomaly (Be > B and N > O)"}}
+        }
+        return _make_quickchart_url(chart), "📊 *Visual Periodic Table Map: Ionization Energy Anomalies & Trends*"
+
+    # 14. BIOLOGY: Cell Cycle & Mitosis
+    elif any(w in q for w in ["cell cycle", "mitosis", "meiosis", "interphase"]):
+        chart = {
+            "type": "pie",
+            "data": {
+                "labels": ["G1 Phase (Growth ~40%)", "S Phase (DNA Synthesis ~30%)", "G2 Phase (Prep ~20%)", "M Phase (Mitosis ~10%)"],
+                "datasets": [
+                    {"data": [40, 30, 20, 10], "backgroundColor": ["#3b82f6", "#10b981", "#f59e0b", "#ef4444"]}
+                ]
+            },
+            "options": {"title": {"display": True, "text": "NCERT Cell Cycle Phase Duration Profile"}}
+        }
+        return _make_quickchart_url(chart), "🧬 *Visual Biology Map: Cell Cycle Phase Proportions*"
+
+    # 15. BIOLOGY: Genetics & Mendelian Ratios
+    elif any(w in q for w in ["genetics", "mendel", "dihybrid", "monohybrid", "punnett"]):
+        chart = {
+            "type": "bar",
+            "data": {
+                "labels": ["Round-Yellow", "Round-Green", "Wrinkled-Yellow", "Wrinkled-Green"],
+                "datasets": [
+                    {"label": "Dihybrid F2 Phenotypic Ratio (9:3:3:1)", "data": [9, 3, 3, 1], "backgroundColor": ["#eab308", "#10b981", "#f97316", "#ef4444"]}
+                ]
+            },
+            "options": {"title": {"display": True, "text": "Mendelian Dihybrid F2 Cross Phenotypic Ratio"}}
+        }
+        return _make_quickchart_url(chart), "🌿 *Visual Genetics Map: Mendelian Dihybrid Ratio Chart*"
+
+    # 16. BIOLOGY: Respiratory Volumes (NEET High-Yield)
+    elif any(w in q for w in ["respiration", "lung", "vital capacity", "tidal volume", "nephron", "heart"]):
+        chart = {
+            "type": "bar",
+            "data": {
+                "labels": ["Tidal Vol (TV: 500mL)", "Insp Reserve (IRV: 2500mL)", "Exp Reserve (ERV: 1100mL)", "Residual Vol (RV: 1200mL)"],
+                "datasets": [
+                    {"label": "Lung Capacity Volumes (mL)", "data": [500, 2500, 1100, 1200], "backgroundColor": ["#06b6d4", "#3b82f6", "#8b5cf6", "#f43f5e"]}
+                ]
+            },
+            "options": {"title": {"display": True, "text": "Human Pulmonary Volumes & Capacities (NCERT)"}}
+        }
+        return _make_quickchart_url(chart), "🫁 *Visual Biology Map: Human Lung Volumes & Capacities*"
+
+    # 17. MATHS: 3D Vectors & Geometry
     elif any(w in q for w in ["vector", "dot product", "cross product", "3d", "coordinate"]):
-        return "https://quickchart.io/chart?c=%7Btype%3A%27line%27%2Cdata%3A%7Blabels%3A%5B%27X%27%2C%27Y%27%2C%27Z%27%5D%2Cdatasets%3A%5B%7Blabel%3A%27Vector+A%27%2Cdata%3A%5B2%2C1%2C-1%5D%2CborderColor%3A%27green%27%7D%2C%7Blabel%3A%27Vector+B%27%2Cdata%3A%5B1%2C-1%2C1%5D%2CborderColor%3A%27purple%27%7D%5D%7D&title=3D+Vector+Component+Diagram"
+        chart = {
+            "type": "line",
+            "data": {
+                "labels": ["X-axis", "Y-axis", "Z-axis"],
+                "datasets": [
+                    {"label": "Vector A (2, 1, -1)", "data": [2, 1, -1], "borderColor": "#16a34a"},
+                    {"label": "Vector B (1, -1, 1)", "data": [1, -1, 1], "borderColor": "#9333ea"}
+                ]
+            },
+            "options": {"title": {"display": True, "text": "3D Vector Cartesian Component Projections"}}
+        }
+        return _make_quickchart_url(chart), "📐 *Visual Vector Map: 3D Coordinate Component Projections*"
+
     return None
+
+
+def get_topic_diagram_url(query: str) -> Optional[str]:
+    """Backward compatibility helper returning just the diagram URL."""
+    info = get_topic_diagram_info(query)
+    return info[0] if info else None
+
