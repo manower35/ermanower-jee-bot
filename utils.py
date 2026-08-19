@@ -132,22 +132,32 @@ def parse_text_query(text: str) -> VisionExtractionResult:
     """
     client = _get_client()
 
-    response = client.chat.completions.create(
-        model="llama-3.3-70b-versatile",
-        messages=[
-            {"role": "system", "content": _ANALYSIS_SYSTEM_PROMPT},
-            {
-                "role": "user",
-                "content": (
-                    "A student sent the following text query about an engineering "
-                    "entrance exam problem. Analyse it and return structured JSON.\n\n"
-                    f"Student query:\n{text}"
-                ),
-            },
-        ],
-        temperature=0.1,
-        max_tokens=2048,
-    )
+    models_to_try = ["openai/gpt-oss-120b", "openai/gpt-oss-20b", "qwen/qwen3.6-27b"]
+    response = None
+    for m in models_to_try:
+        try:
+            response = client.chat.completions.create(
+                model=m,
+                messages=[
+                    {"role": "system", "content": _ANALYSIS_SYSTEM_PROMPT},
+                    {
+                        "role": "user",
+                        "content": (
+                            "A student sent the following text query about an engineering "
+                            "entrance exam problem. Analyse it and return structured JSON.\n\n"
+                            f"Student query:\n{text}"
+                        ),
+                    },
+                ],
+                temperature=0.1,
+                max_tokens=1024,
+            )
+            break
+        except Exception:
+            continue
+
+    if response is None:
+        return VisionExtractionResult(raw_text=text, question_summary=text[:500])
 
     raw_json = response.choices[0].message.content.strip()
     logger.debug("Groq analysis raw response: %s", raw_json)
