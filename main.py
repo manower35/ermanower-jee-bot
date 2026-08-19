@@ -626,12 +626,14 @@ async def _send_long_message(update: Update, text: str) -> None:
             break
 
         split_pos = text.rfind("\n\n", 0, max_len)
-        if split_pos == -1:
+        if split_pos <= 0:
             split_pos = text.rfind("\n", 0, max_len)
-        if split_pos == -1:
+        if split_pos <= 0:
             split_pos = max_len
 
-        chunks.append(text[:split_pos])
+        chunk = text[:split_pos].strip()
+        if chunk:
+            chunks.append(chunk)
         text = text[split_pos:].lstrip("\n")
 
     for i, chunk in enumerate(chunks):
