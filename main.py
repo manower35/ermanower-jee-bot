@@ -324,8 +324,19 @@ async def cmd_formula(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
     """Generate formula card for specified topic."""
     topic = " ".join(context.args) if context.args else "Thermodynamics and Optics"
     await update.message.chat.send_action("typing")
-    query = f"Generate a compact formula card for: {topic}"
-    response = await _run_sync(run_crew, query)
+    try:
+        diag_info = get_topic_diagram_info(topic)
+        if diag_info:
+            try:
+                await update.message.reply_photo(photo=diag_info[0], caption=diag_info[1], parse_mode="Markdown")
+            except Exception as err:
+                logger.warning("Diagram send error in /formula: %s", err)
+
+        query = f"Generate a compact formula card for: {topic}"
+        response = await _run_sync(run_crew, query)
+    except Exception as exc:
+        logger.error("cmd_formula failed: %s", exc, exc_info=True)
+        response = f"⚠️ Could not generate formula card for '{topic}'. Please try again in a few seconds."
     await _send_long_message(update, response)
 
 
@@ -333,8 +344,19 @@ async def cmd_trick(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Generate 10-second speed shortcut for specified topic."""
     topic = " ".join(context.args) if context.args else "Projectile Motion and Collisions"
     await update.message.chat.send_action("typing")
-    query = f"Teach 10-second speed tricks and option elimination for: {topic}"
-    response = await _run_sync(run_crew, query)
+    try:
+        diag_info = get_topic_diagram_info(topic)
+        if diag_info:
+            try:
+                await update.message.reply_photo(photo=diag_info[0], caption=diag_info[1], parse_mode="Markdown")
+            except Exception as err:
+                logger.warning("Diagram send error in /trick: %s", err)
+
+        query = f"Teach 10-second speed tricks and option elimination for: {topic}"
+        response = await _run_sync(run_crew, query)
+    except Exception as exc:
+        logger.error("cmd_trick failed: %s", exc, exc_info=True)
+        response = f"⚠️ Could not generate speed trick for '{topic}'. Please try again in a few seconds."
     await _send_long_message(update, response)
 
 
@@ -342,8 +364,12 @@ async def cmd_compare(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
     """Generate comparative breakdown between two concepts."""
     topic = " ".join(context.args) if context.args else "Isothermal vs Adiabatic processes"
     await update.message.chat.send_action("typing")
-    query = f"Compare and distinguish: {topic}"
-    response = await _run_sync(run_crew, query)
+    try:
+        query = f"Compare and distinguish: {topic}"
+        response = await _run_sync(run_crew, query)
+    except Exception as exc:
+        logger.error("cmd_compare failed: %s", exc, exc_info=True)
+        response = f"⚠️ Could not compare '{topic}'. Please try again in a few seconds."
     await _send_long_message(update, response)
 
 
@@ -351,8 +377,12 @@ async def cmd_mistakes(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
     """Generate top negative marking traps for specified topic."""
     topic = " ".join(context.args) if context.args else "Ray Optics and Electrostatics"
     await update.message.chat.send_action("typing")
-    query = f"What are the top negative marking mistakes and traps in: {topic}"
-    response = await _run_sync(run_crew, query)
+    try:
+        query = f"What are the top negative marking mistakes and traps in: {topic}"
+        response = await _run_sync(run_crew, query)
+    except Exception as exc:
+        logger.error("cmd_mistakes failed: %s", exc, exc_info=True)
+        response = f"⚠️ Could not analyze negative marking traps for '{topic}'. Please try again in a few seconds."
     await _send_long_message(update, response)
 
 
