@@ -198,7 +198,7 @@ def parse_image(image_bytes: bytes, mime_type: str = "image/jpeg") -> VisionExtr
     import httpx
 
     b64_data = base64.b64encode(image_bytes).decode("utf-8")
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={google_api_key}"
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={google_api_key}"
 
     prompt_text = (
         "You are an academic OCR vision assistant for Indian engineering/medical entrance exams (IIT-JEE, TG EAPCET, NEET, IPE Board).\n"

@@ -238,36 +238,79 @@ def run_fast_tutor(student_input: str) -> str:
 
     user_content = f"Student Query:\n{student_input}{context_str}"
 
-    models_to_try = [
-        "openai/gpt-oss-120b",
-        "openai/gpt-oss-20b",
-        "qwen/qwen3.6-27b",
-        "groq/compound"
-    ]
+    final_output = ""
 
-    response = None
-    last_err = None
-    for model_name in models_to_try:
+    # 1. Primary Engine: High-speed Groq LPU models
+    groq_api_key = os.environ.get("GROQ_API_KEY", "")
+    if groq_api_key:
         try:
-            response = client.chat.completions.create(
-                model=model_name,
-                messages=[
-                    {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": user_content},
-                ],
-                temperature=0.3,
-                max_tokens=max_tokens,
-            )
-            logger.info("Successfully generated response using model: %s", model_name)
-            break
-        except Exception as err:
-            logger.warning("Model %s failed: %s. Trying next model...", model_name, err)
-            last_err = err
+            from groq import Groq
+            client = Groq(api_key=groq_api_key)
+            models_to_try = [
+                "openai/gpt-oss-120b",
+                "openai/gpt-oss-20b",
+                "qwen/qwen3.6-27b",
+                "groq/compound"
+            ]
+            for model_name in models_to_try:
+                try:
+                    response = client.chat.completions.create(
+                        model=model_name,
+                        messages=[
+                            {"role": "system", "content": system_prompt},
+                            {"role": "user", "content": user_content},
+                        ],
+                        temperature=0.3,
+                        max_tokens=max_tokens,
+                    )
+                    final_output = response.choices[0].message.content.strip()
+                    logger.info("Successfully generated response using Groq model: %s", model_name)
+                    break
+                except Exception as err:
+                    logger.warning("Groq model %s failed: %s. Trying next...", model_name, err)
+        except Exception as groq_err:
+            logger.warning("Groq engine failed: %s. Falling back to Gemini...", groq_err)
 
-    if response is None:
-        raise RuntimeError(f"All Groq models failed: {last_err}")
+    # 2. Secondary Resilient Engine: Google Gemini 2.5 / 3.6 Flash Fallback
+    if not final_output:
+        google_api_key = os.environ.get("GOOGLE_API_KEY", "")
+        if google_api_key:
+            import httpx
+            gemini_models = ["gemini-2.5-flash", "gemini-3.6-flash"]
+            for g_model in gemini_models:
+                try:
+                    url = f"https://generativelanguage.googleapis.com/v1beta/models/{g_model}:generateContent?key={google_api_key}"
+                    payload = {
+                        "contents": [
+                            {
+                                "parts": [
+                                    {"text": user_content}
+                                ]
+                            }
+                        ],
+                        "systemInstruction": {
+                            "parts": [
+                                {"text": system_prompt}
+                            ]
+                        },
+                        "generationConfig": {
+                            "temperature": 0.3,
+                            "maxOutputTokens": 2048
+                        }
+                    }
+                    with httpx.Client(timeout=25.0) as http_client:
+                        resp = http_client.post(url, json=payload)
+                        if resp.status_code == 200:
+                            data = resp.json()
+                            final_output = data["candidates"][0]["content"]["parts"][0]["text"].strip()
+                            logger.info("Successfully generated response using Google Gemini fallback: %s", g_model)
+                            break
+                except Exception as g_err:
+                    logger.warning("Gemini model %s failed: %s", g_model, g_err)
 
-    final_output = response.choices[0].message.content.strip()
+    if not final_output:
+        raise RuntimeError("All AI inference engines (Groq and Google Gemini) failed.")
+
     final_output = final_output.replace("*", "").replace("$", "")
     logger.info("Fast Socratic Tutor completed in single pass. Output length: %d chars", len(final_output))
     return final_output
