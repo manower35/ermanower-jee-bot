@@ -79,10 +79,10 @@ def run_fast_tutor(student_input: str) -> str:
         "option a", "option b", "option c", "option d"
     ]
 
-    max_tokens = 950
+    max_tokens = 2048
 
     if is_formula_card:
-        max_tokens = 1100
+        max_tokens = 2048
         system_prompt = (
             "You are ErManower — elite IIT-JEE, TG EAPCET, and NEET formula architect.\n"
             "The student wants an instant, beautifully organized FORMULA CHEAT SHEET.\n\n"
@@ -99,23 +99,23 @@ def run_fast_tutor(student_input: str) -> str:
         context_str = ""
 
     elif is_trick_request:
-        max_tokens = 1000
+        max_tokens = 2048
         system_prompt = (
-            "You are ErManower — Master of Competitive Exam Speed Tactics for IIT-JEE & TG EAPCET.\n"
-            "The student wants 10-SECOND SPEED TRICKS and OPTION ELIMINATION TECHNIQUES.\n\n"
-            "STRICT RULES:\n"
-            "1. Structure your response in 4 clear, high-speed sections:\n"
-            "   ⚡ 10-SECOND SHORTCUT: The rapid formula or shortcut rule.\n"
-            "   ⏱️ SPEED COMPARISON: Standard Method (3 min) vs Shortcut Method (15 sec).\n"
-            "   🔍 DIMENSIONAL & LIMIT CHECK: How to eliminate 2 options in 5 seconds.\n"
-            "   🎯 ACTIVE CHALLENGE: Socratic question asking student to solve a problem with this trick.\n"
-            "2. Complete all thoughts fully. Never cut off mid-sentence.\n"
-            "3. NO ASTERISKS (*) or DOLLAR SIGNS ($)."
+            "You are ErManower — Master of Competitive Exam Speed Tactics for IIT-JEE, TG EAPCET & NEET.\n"
+            "The student wants 10-SECOND SPEED TRICKS and OPTION ELIMINATION TECHNIQUES specifically for their topic.\n\n"
+            "MANDATORY FORMATTING & COMPLETION RULES:\n"
+            "1. Structure your answer in 4 concise, high-impact sections:\n"
+            "   ⚡ 10-SECOND SHORTCUT: The core formula, ratio trick, or visual shortcut rule.\n"
+            "   ⏱️ STANDARD VS SHORTCUT: Clear comparison showing why standard method takes 3 mins and shortcut takes 15 seconds.\n"
+            "   🔍 OPTION ELIMINATION: How to eliminate 2 wrong options instantly using dimensions, symmetry, or boundary limits.\n"
+            "   🎯 ACTIVE CHALLENGE: 1 quick practice problem testing their speed with this trick.\n"
+            "2. ALWAYS COMPLETE ALL 4 SECTIONS FULLY. Never terminate mid-sentence.\n"
+            "3. NO ASTERISKS (*) and NO DOLLAR SIGNS ($). Keep all equations in clean plain text notation."
         )
         context_str = ""
 
     elif is_compare_request:
-        max_tokens = 1100
+        max_tokens = 2048
         system_prompt = (
             "You are ErManower — Senior IIT-JEE & NEET Professor.\n"
             "The student wants to compare or distinguish two related concepts (e.g. SN1 vs SN2, Isothermal vs Adiabatic).\n\n"
@@ -131,7 +131,7 @@ def run_fast_tutor(student_input: str) -> str:
         context_str = ""
 
     elif is_mistakes_request:
-        max_tokens = 1000
+        max_tokens = 2048
         system_prompt = (
             "You are ErManower — Negative Marking Specialist for IIT-JEE & NEET.\n"
             "The student wants to know COMMON EXAM MISTAKES, TRAPS, and BLUNDERS.\n\n"
@@ -146,7 +146,7 @@ def run_fast_tutor(student_input: str) -> str:
         context_str = ""
 
     elif is_mindmap_request:
-        max_tokens = 1100
+        max_tokens = 2048
         system_prompt = (
             "You are ErManower — an elite IIT-JEE, TG EAPCET, and NEET mentor.\n"
             "The student wants a visual concept MIND MAP / FLOWCHART for their topic.\n\n"
@@ -162,7 +162,7 @@ def run_fast_tutor(student_input: str) -> str:
         context_str = ""
 
     elif is_list_request:
-        max_tokens = 1300
+        max_tokens = 2048
         system_prompt = (
             "You are ErManower — a legendary Hyderabad senior engineering and medical entrance tutor.\n"
             "The student is asking for a list of high-yield practice questions / PYQ topics.\n\n"
@@ -179,7 +179,7 @@ def run_fast_tutor(student_input: str) -> str:
         context_str = ""
 
     elif is_biology_request:
-        max_tokens = 1000
+        max_tokens = 2048
         system_prompt = (
             "You are ErManower — senior NEET Biology mentor specialized in Botany and Zoology.\n\n"
             "STRICT RULES:\n"
@@ -194,7 +194,7 @@ def run_fast_tutor(student_input: str) -> str:
         )
 
     elif is_proof_request:
-        max_tokens = 1100
+        max_tokens = 2048
         system_prompt = (
             "You are ErManower — a senior engineering entrance tutor for IIT-JEE (Main/Adv) and TG EAPCET.\n\n"
             "STRICT RULES:\n"
@@ -210,7 +210,7 @@ def run_fast_tutor(student_input: str) -> str:
         context_str = ""
 
     elif is_short_response:
-        max_tokens = 900
+        max_tokens = 2048
         system_prompt = (
             "You are ErManower — a senior engineering and medical entrance tutor.\n"
             "The student gave a short response (e.g. '1', '2', 'option A') following up on the previous discussion.\n\n"
@@ -222,7 +222,7 @@ def run_fast_tutor(student_input: str) -> str:
         )
 
     else:
-        max_tokens = 1000
+        max_tokens = 2048
         system_prompt = (
             "You are ErManower — a legendary senior engineering & medical entrance tutor for IIT-JEE (Main/Adv), TG EAPCET, and NEET.\n\n"
             "STRICT RULES:\n"

@@ -406,12 +406,68 @@ def get_topic_diagram_info(query: str) -> Optional[tuple[str, str]]:
         }
         return _make_quickchart_url(chart), "⚡ *Visual Circuit Map: Kirchhoff Loop & Branch Currents*"
 
-    # 10. PHYSICS: Free Body Diagram Forces
-    elif any(w in q for w in ["force", "motion", "block", "free body", "fbd", "friction", "newton"]):
+    # 10. PHYSICS: Friction (Static vs Kinetic Friction Curve)
+    elif any(w in q for w in ["friction", "static friction", "kinetic friction", "limiting friction", "mu_s", "mu_k", "rough surface"]):
+        chart = {
+            "type": "line",
+            "data": {
+                "labels": ["0N", "5N", "10N (Static)", "15N (f_s,max Peak)", "20N (Kinetic)", "25N", "30N"],
+                "datasets": [
+                    {"label": "Friction Force f (N)", "data": [0, 5, 10, 15, 12, 12, 12], "borderColor": "#dc2626", "fill": True, "backgroundColor": "rgba(220,38,38,0.1)"}
+                ]
+            },
+            "options": {"title": {"display": True, "text": "Friction vs Applied Force: Static Self-Adjusting (f_s ≤ μ_s N) to Constant Kinetic (f_k = μ_k N)"}}
+        }
+        return _make_quickchart_url(chart), "🛑 *Visual Physics Map: Static vs Kinetic Friction Curve*"
+
+    # 11. PHYSICS: Gravitation & Variation of g
+    elif any(w in q for w in ["gravity", "gravitation", "escape velocity", "orbital", "kepler", "g(r)", "earth mass"]):
+        chart = {
+            "type": "line",
+            "data": {
+                "labels": ["0 (Center)", "0.5R", "1.0R (Surface)", "1.5R", "2.0R", "3.0R"],
+                "datasets": [
+                    {"label": "Acceleration due to Gravity g(r) in m/s²", "data": [0, 4.9, 9.8, 4.35, 2.45, 1.09], "borderColor": "#2563eb", "fill": True, "backgroundColor": "rgba(37,99,235,0.15)"}
+                ]
+            },
+            "options": {"title": {"display": True, "text": "Variation of g with Distance r: Inside Earth (g ∝ r) vs In Space (g ∝ 1/r²)"}}
+        }
+        return _make_quickchart_url(chart), "🌍 *Visual Gravitation Map: Variation of g Inside & Outside Earth*"
+
+    # 12. PHYSICS: Newton's 3rd Law Action-Reaction
+    elif any(w in q for w in ["3rd law", "third law", "action reaction", "action-reaction", "newton 3rd", "newtons 3rd"]):
+        chart = {
+            "type": "bar",
+            "data": {
+                "labels": ["F_AB (Force on Body B by Body A)", "F_BA (Reaction Force on Body A by Body B)"],
+                "datasets": [
+                    {"label": "Action-Reaction Paired Forces (Equal Magnitude & Opposite Direction)", "data": [50, -50], "backgroundColor": ["#2563eb", "#ef4444"]}
+                ]
+            },
+            "options": {"title": {"display": True, "text": "Newton's 3rd Law: Action-Reaction Force Vector Pairs (F_AB = -F_BA on Separate Bodies)"}}
+        }
+        return _make_quickchart_url(chart), "⚖️ *Visual Physics Map: Action-Reaction Paired Force Vectors*"
+
+    # 13. PHYSICS: Kinematics & 1D Motion (v-t Graph)
+    elif any(w in q for w in ["kinematics", "1d motion", "v-t", "velocity-time", "motion graph", "acceleration"]):
+        chart = {
+            "type": "line",
+            "data": {
+                "labels": ["0s", "2s", "4s", "6s", "8s", "10s"],
+                "datasets": [
+                    {"label": "Velocity v(t) in m/s (Slope = Acceleration, Area = Displacement)", "data": [0, 10, 20, 20, 10, 0], "borderColor": "#16a34a", "fill": True, "backgroundColor": "rgba(22,163,74,0.15)"}
+                ]
+            },
+            "options": {"title": {"display": True, "text": "Velocity-Time (v-t) Graph: Acceleration, Constant Velocity & Deceleration"}}
+        }
+        return _make_quickchart_url(chart), "📈 *Visual Kinematics Map: Velocity-Time (v-t) Profile & Slope*"
+
+    # 14. PHYSICS: Free Body Diagram Forces
+    elif any(w in q for w in ["force", "motion", "block", "free body", "fbd", "newton", "tension"]):
         chart = {
             "type": "radar",
             "data": {
-                "labels": ["F_applied (Horizontal)", "Normal Force (Up)", "Gravity m·g (Down)", "Friction f_k (Opposite)"],
+                "labels": ["F_applied (Horizontal)", "Normal Force (Up)", "Gravity m·g (Down)", "Opposing Force (Left)"],
                 "datasets": [
                     {"label": "Force Vector Magnitude (N)", "data": [20, 49, 49, 10], "backgroundColor": "rgba(59,130,246,0.25)", "borderColor": "#2563eb"}
                 ]
